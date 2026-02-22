@@ -35,6 +35,10 @@ class TerminalState: ObservableObject {
     @Published var focusedIntensity: Double = 0.08
     @Published var focusInDuration: Double = 0.2
     @Published var focusOutDuration: Double = 0.5
+
+    // Pixelation
+    @Published var pixelSize: Double = 0.0 // 0 = off, otherwise block size in points
+    @Published var gridOpacity: Double = 0.6
 }
 
 struct ContentView: View {
@@ -55,7 +59,9 @@ struct ContentView: View {
                     maxIntensity: state.maxIntensity,
                     focusedIntensity: state.focusedIntensity,
                     focusInDuration: state.focusInDuration,
-                    focusOutDuration: state.focusOutDuration
+                    focusOutDuration: state.focusOutDuration,
+                    pixelSize: state.pixelSize,
+                    gridOpacity: state.gridOpacity
                 )
 
                 TaskFlashOverlay(

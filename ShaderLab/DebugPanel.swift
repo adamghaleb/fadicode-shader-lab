@@ -138,6 +138,30 @@ struct DebugPanel: View {
                 // MARK: - Shader Tuning
                 sectionHeader("Shader Tuning")
 
+                // MARK: - Pixelation
+                sectionHeader("Pixelation")
+
+                HStack {
+                    ForEach(pixelPresets, id: \.size) { preset in
+                        Button(preset.label) {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                state.pixelSize = preset.size
+                            }
+                        }
+                        .buttonStyle(DebugButtonStyle(
+                            color: state.pixelSize == preset.size ? Color(nsColor: state.themeColor) : .gray
+                        ))
+                    }
+                }
+
+                sliderRow("Block Size", value: $state.pixelSize, range: 0...24)
+                sliderRow("Grid Lines", value: $state.gridOpacity, range: 0.0...1.0)
+
+                Divider().background(Color.white.opacity(0.2))
+
+                // MARK: - Shader Tuning
+                sectionHeader("Shader Tuning")
+
                 sliderRow("Speed", value: $state.shaderSpeed, range: 0.1...3.0)
                 sliderRow("Unfocused Intensity", value: $state.maxIntensity, range: 0.0...1.5)
                 sliderRow("Focused Intensity", value: $state.focusedIntensity, range: 0.0...0.5)
@@ -231,6 +255,15 @@ struct DebugPanel: View {
                 .tint(Color(nsColor: state.themeColor))
         }
     }
+
+    // MARK: - Pixel Presets
+
+    private let pixelPresets: [(label: String, size: Double)] = [
+        ("Off",  0),
+        ("4px",  4),
+        ("8px",  8),
+        ("12px", 12),
+    ]
 
     // MARK: - Shader Presets
 

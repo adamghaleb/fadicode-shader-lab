@@ -15,6 +15,8 @@ struct WorkingStateOverlay: View {
     var focusedIntensity: Double = 0.08
     var focusInDuration: Double = 0.2
     var focusOutDuration: Double = 0.5
+    var pixelSize: Double = 0.0
+    var gridOpacity: Double = 0.6
 
     @State private var intensity: Double = 0.0
     @State private var isVisible: Bool = false
@@ -101,7 +103,9 @@ struct WorkingStateOverlay: View {
                             .float(Float(themeRGB.b)),
                             .float(Float(geo.size.width)),
                             .float(Float(geo.size.height)),
-                            .float(Float(mode))
+                            .float(Float(mode)),
+                            .float(Float(pixelSize)),
+                            .float(Float(gridOpacity))
                         )
                     )
                     // drawingGroup forces an offscreen Metal render pass,

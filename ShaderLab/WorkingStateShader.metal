@@ -268,13 +268,31 @@ half4 workingStateEffect(
     float themeB,
     float viewWidth,
     float viewHeight,
-    float mode
+    float mode,
+    float pixelSize,
+    float gridOpacity
 ) {
     if (intensity < 0.001) {
         return half4(0.0h);
     }
 
     float2 uv = position / float2(viewWidth, viewHeight);
+
+    // --- Pixelation: snap to grid for that chunky retro look ---
+    float gridDarken = 0.0;
+    if (pixelSize > 1.0) {
+        float2 gridCount = float2(viewWidth, viewHeight) / pixelSize;
+        // Nearest-neighbor: snap UV to cell center
+        uv = (floor(uv * gridCount) + 0.5) / gridCount;
+
+        // Grid lines between cells — hard 1px edges
+        float2 cellPos = fract(position / pixelSize);
+        float lineThickness = 1.0 / pixelSize; // 1 real pixel wide
+        float lineX = step(cellPos.x, lineThickness);
+        float lineY = step(cellPos.y, lineThickness);
+        gridDarken = max(lineX, lineY) * gridOpacity;
+    }
+
     float2 centered = uv * 2.0 - 1.0;
     centered.x *= viewWidth / viewHeight;
     float dist = length(centered);
@@ -293,8 +311,14 @@ half4 workingStateEffect(
         default: color = modeCombined(centered, uv, dist, time, theme, comp); break;
     }
 
+    // Darken grid lines
+    color *= (1.0 - gridDarken);
+
     float alpha = intensity * length(color) * 1.5;
     alpha = clamp(alpha, 0.0, intensity * 0.85);
+
+    // Grid lines also cut alpha so the gap is truly dark
+    alpha *= (1.0 - gridDarken * 0.5);
 
     return half4(half3(color), half(alpha));
 }
