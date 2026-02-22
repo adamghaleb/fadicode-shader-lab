@@ -82,24 +82,50 @@ static inline float3 rgb2hsv(float3 c) {
 }
 
 // ============================================================
-// Posterize: map grayscale to analogous color palette
+// Posterize: analogous gradient ramp around theme color
+// Shadows → cooler neighbor, Mids → theme, Highlights → warmer neighbor
+// Complement bleeds into highlights only
 // ============================================================
 
-static inline float3 posterize(float lum, float3 themeRGB, float levels) {
+static inline float3 posterize(float lum, float3 themeRGB, float levels,
+                                float hueSpread = 0.10, float complementMix = 0.0) {
     float3 themeHSV = rgb2hsv(themeRGB);
     float baseHue = themeHSV.x;
     float baseSat = max(themeHSV.y, 0.6);
 
+    // Quantize brightness into bands
     float q = floor(lum * levels) / levels;
-    float hueOffset = mix(-0.08, 0.08, q);
+
+    // Analogous hue ramp: ±hueSpread on the color wheel
+    // q=0 (shadow) → cooler, q=0.5 (mid) → theme, q=1 (highlight) → warmer
+    float hueT = q * 2.0 - 1.0; // remap 0..1 → -1..+1
+    float hueOffset = hueT * hueSpread;
     float hue = fract(baseHue + hueOffset);
 
-    float sat = baseSat * smoothstep(0.0, 0.3, q) * smoothstep(1.0, 0.7, q);
-    sat = max(sat, baseSat * 0.4);
+    // Saturation: richest at mid-tones, desaturate in deep shadows and bright highlights
+    float satCurve = 1.0 - (hueT * hueT) * 0.5;
+    float sat = baseSat * satCurve;
+    sat = max(sat, baseSat * 0.3);
+    sat = mix(sat * 1.15, sat, smoothstep(0.0, 0.4, q));
 
-    float val = max(q * 1.3, 0.05);
+    // Value: gradient ramp from near-black to bright
+    float val = mix(0.06, 1.2, q);
+    val = clamp(val, 0.0, 1.0);
 
-    return hsv2rgb(float3(hue, sat, val));
+    float3 analogousColor = hsv2rgb(float3(hue, sat, val));
+
+    // Complementary accent: opposite hue, only in highlights
+    if (complementMix > 0.001) {
+        float compHue = fract(baseHue + 0.5);
+        float compSat = baseSat * 0.85;
+        float3 compColor = hsv2rgb(float3(compHue, compSat, val));
+
+        // Blend factor: rises steeply only in bright bands
+        float compBlend = smoothstep(0.55, 1.0, q) * complementMix;
+        analogousColor = mix(analogousColor, compColor, compBlend);
+    }
+
+    return analogousColor;
 }
 
 #endif

@@ -11,7 +11,8 @@ half4 lavaLampEffect(
     float themeR, float themeG, float themeB,
     float viewWidth, float viewHeight,
     float pixelSize, float gridOpacity,
-    float posterizeLevels
+    float posterizeLevels,
+    float hueSpread, float complementMix
 ) {
     if (intensity < 0.001) return half4(0.0h);
     PipelineSetup s = pipelineSetup(position, viewWidth, viewHeight, pixelSize, gridOpacity);
@@ -47,5 +48,5 @@ half4 lavaLampEffect(
     lum *= smoothstep(1.6, 0.2, s.dist);
     lum = clamp(lum, 0.0, 1.0);
 
-    return pipelineFinalize(lum, intensity, float3(themeR, themeG, themeB), posterizeLevels, s.gridDarken);
+    return pipelineFinalize(lum, intensity, float3(themeR, themeG, themeB), posterizeLevels, s.gridDarken, hueSpread, complementMix);
 }

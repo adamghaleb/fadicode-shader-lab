@@ -3,6 +3,8 @@ import SwiftUI
 /// Debug control panel for testing shader effects.
 struct DebugPanel: View {
     @EnvironmentObject var state: TerminalState
+    @State private var showCopied: Bool = false
+    @State private var showExported: Bool = false
 
     var body: some View {
         ScrollView {
@@ -108,10 +110,43 @@ struct DebugPanel: View {
                 .font(.system(size: 12, design: .monospaced))
                 .tint(Color(nsColor: state.themeColor))
 
+                // Surprise Me: pick random shader + randomize all params
+                Button {
+                    let shaders = InfernoShader.allCases.filter { $0 != .none }
+                    guard let random = shaders.randomElement() else { return }
+                    state.infernoShader = random
+
+                    // Override defaults with random values within each param's range
+                    let defs = random.parameterDefs
+                    if defs.count > 0 { state.infernoParam1 = Double.random(in: defs[0].range) }
+                    if defs.count > 1 { state.infernoParam2 = Double.random(in: defs[1].range) }
+                    if defs.count > 2 { state.infernoParam3 = Double.random(in: defs[2].range) }
+                    if defs.count > 3 { state.infernoParam4 = Double.random(in: defs[3].range) }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "dice.fill")
+                        Text("Surprise Me")
+                    }
+                }
+                .buttonStyle(DebugButtonStyle(color: .purple))
+
                 if state.infernoShader != .none {
                     HStack {
                         statusPill(state.infernoShader.shaderType.label, color: state.infernoShader.shaderType.tint)
                         Spacer()
+                        Button {
+                            let defs = state.infernoShader.parameterDefs
+                            if defs.count > 0 { state.infernoParam1 = Double.random(in: defs[0].range) }
+                            if defs.count > 1 { state.infernoParam2 = Double.random(in: defs[1].range) }
+                            if defs.count > 2 { state.infernoParam3 = Double.random(in: defs[2].range) }
+                            if defs.count > 3 { state.infernoParam4 = Double.random(in: defs[3].range) }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "sparkles")
+                                Text("Randomize")
+                            }
+                        }
+                        .buttonStyle(DebugButtonStyle(color: .pink))
                         Button("Reset") {
                             state.resetInfernoParams()
                         }
@@ -124,6 +159,28 @@ struct DebugPanel: View {
 
                     // Dynamic per-shader parameter sliders
                     infernoParamSliders
+
+                    // Copy Code button
+                    Button {
+                        let snippet = state.infernoShader.generateCodeSnippet(
+                            param1: state.infernoParam1,
+                            param2: state.infernoParam2,
+                            param3: state.infernoParam3,
+                            param4: state.infernoParam4
+                        )
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(snippet, forType: .string)
+                        showCopied = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            showCopied = false
+                        }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: showCopied ? "checkmark" : "doc.on.doc")
+                            Text(showCopied ? "Copied!" : "Copy Code")
+                        }
+                    }
+                    .buttonStyle(DebugButtonStyle(color: .cyan))
                 }
 
                 Divider().background(Color.white.opacity(0.2))
@@ -131,38 +188,64 @@ struct DebugPanel: View {
                 // MARK: - Shader Preset
                 sectionHeader("Working State Preset")
 
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 6) {
-                    ForEach(shaderPresets, id: \.mode) { preset in
-                        Button {
-                            state.shaderMode = preset.mode
-                        } label: {
-                            HStack(spacing: 6) {
-                                Text(preset.icon)
-                                    .font(.system(size: 14))
-                                Text(preset.name)
-                                    .font(.system(size: 11, weight: .medium, design: .monospaced))
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 7)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(state.shaderMode == preset.mode
-                                        ? Color(nsColor: state.themeColor).opacity(0.25)
-                                        : Color.white.opacity(0.05))
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .strokeBorder(
-                                        state.shaderMode == preset.mode
-                                            ? Color(nsColor: state.themeColor).opacity(0.6)
-                                            : Color.white.opacity(0.1),
-                                        lineWidth: 1
-                                    )
-                            )
+                // Export & stats
+                HStack(spacing: 4) {
+                    statusPill("\(state.starredShaders.count)★", color: .yellow)
+                    statusPill("\(state.likedShaders.count)👍", color: .green)
+                    statusPill("\(state.midShaders.count)~", color: .orange)
+                    statusPill("\(state.dislikedShaders.count)👎", color: .red)
+
+                    Spacer()
+
+                    Button {
+                        exportRatings()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: showExported ? "checkmark" : "square.and.arrow.up")
+                            Text(showExported ? "Copied!" : "Export")
                         }
-                        .buttonStyle(.plain)
-                        .foregroundColor(state.shaderMode == preset.mode ? .white : .white.opacity(0.6))
                     }
+                    .buttonStyle(DebugButtonStyle(color: showExported ? .green : .cyan))
+                }
+
+                // Starred section
+                if !state.starredShaders.isEmpty {
+                    sectionHeader("Best")
+                    shaderGrid(shaderPresets.filter { state.starredShaders.contains($0.mode) })
+                }
+
+                // Liked section
+                if !state.likedShaders.isEmpty {
+                    sectionHeader("Good")
+                    shaderGrid(shaderPresets.filter { state.likedShaders.contains($0.mode) })
+                }
+
+                // Mid section
+                if !state.midShaders.isEmpty {
+                    sectionHeader("Mid")
+                    shaderGrid(shaderPresets.filter { state.midShaders.contains($0.mode) })
+                }
+
+                // Unrated section
+                let unratedPresets = shaderPresets.filter {
+                    !state.starredShaders.contains($0.mode) &&
+                    !state.likedShaders.contains($0.mode) &&
+                    !state.midShaders.contains($0.mode) &&
+                    !state.dislikedShaders.contains($0.mode)
+                }
+                if !unratedPresets.isEmpty {
+                    sectionHeader("Unrated")
+                    shaderGrid(unratedPresets)
+                }
+
+                // Rejected section (collapsed)
+                if !state.dislikedShaders.isEmpty {
+                    DisclosureGroup {
+                        shaderGrid(shaderPresets.filter { state.dislikedShaders.contains($0.mode) })
+                    } label: {
+                        sectionHeader("Rejected (\(state.dislikedShaders.count))")
+                    }
+                    .tint(.white.opacity(0.4))
                 }
 
                 Divider().background(Color.white.opacity(0.2))
@@ -187,7 +270,7 @@ struct DebugPanel: View {
                 }
 
                 sliderRow("Block Size", value: $state.pixelSize, range: 0...24)
-                sliderRow("Grid Lines", value: $state.gridOpacity, range: 0.0...1.0)
+                sliderRow("Grid Lines", value: $state.gridOpacity, range: 0.0...5.0)
 
                 Divider().background(Color.white.opacity(0.2))
 
@@ -208,6 +291,8 @@ struct DebugPanel: View {
                 }
 
                 sliderRow("Levels", value: $state.posterizeLevels, range: 0...12)
+                sliderRow("Hue Spread", value: $state.hueSpread, range: 0.0...0.25)
+                sliderRow("Complement", value: $state.complementMix, range: 0.0...0.5)
 
                 Divider().background(Color.white.opacity(0.2))
 
@@ -215,6 +300,7 @@ struct DebugPanel: View {
                 sectionHeader("Shader Tuning")
 
                 sliderRow("Speed", value: $state.shaderSpeed, range: 0.1...30.0)
+                sliderRow("Transition", value: $state.transitionDuration, range: 0.3...5.0)
                 sliderRow("Unfocused Intensity", value: $state.maxIntensity, range: 0.0...1.5)
                 sliderRow("Focused Intensity", value: $state.focusedIntensity, range: 0.0...0.5)
                 sliderRow("Focus-in (ms)", value: $state.focusInDuration, range: 0.05...1.0)
@@ -269,6 +355,183 @@ struct DebugPanel: View {
             if defs.count > 3 {
                 sliderRow(defs[3].name, value: $state.infernoParam4, range: defs[3].range)
             }
+        }
+    }
+
+    // MARK: - Shader Grid with Rating Buttons
+
+    private func shaderGrid(_ presets: [(mode: Int, name: String, icon: String)]) -> some View {
+        VStack(spacing: 4) {
+            ForEach(presets, id: \.mode) { preset in
+                HStack(spacing: 6) {
+                    // Shader select button
+                    Button {
+                        state.shaderMode = preset.mode
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(preset.icon)
+                                .font(.system(size: 12))
+                            Text(preset.name)
+                                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                .lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(state.shaderMode == preset.mode
+                                    ? Color(nsColor: state.themeColor).opacity(0.25)
+                                    : Color.white.opacity(0.05))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .strokeBorder(
+                                    state.shaderMode == preset.mode
+                                        ? Color(nsColor: state.themeColor).opacity(0.6)
+                                        : Color.white.opacity(0.1),
+                                    lineWidth: 1
+                                )
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundColor(state.shaderMode == preset.mode ? .white : .white.opacity(0.6))
+
+                    // Rating buttons
+                    ratingButton(
+                        icon: "star.fill",
+                        isActive: state.starredShaders.contains(preset.mode),
+                        activeColor: .yellow
+                    ) {
+                        toggleRating(mode: preset.mode, tier: .star)
+                    }
+
+                    ratingButton(
+                        icon: "hand.thumbsup.fill",
+                        isActive: state.likedShaders.contains(preset.mode),
+                        activeColor: .green
+                    ) {
+                        toggleRating(mode: preset.mode, tier: .like)
+                    }
+
+                    ratingButton(
+                        icon: "minus.circle.fill",
+                        isActive: state.midShaders.contains(preset.mode),
+                        activeColor: .orange
+                    ) {
+                        toggleRating(mode: preset.mode, tier: .mid)
+                    }
+
+                    ratingButton(
+                        icon: "hand.thumbsdown.fill",
+                        isActive: state.dislikedShaders.contains(preset.mode),
+                        activeColor: .red
+                    ) {
+                        toggleRating(mode: preset.mode, tier: .dislike)
+                    }
+                }
+            }
+        }
+    }
+
+    private func ratingButton(icon: String, isActive: Bool, activeColor: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 11))
+                .foregroundColor(isActive ? activeColor : .white.opacity(0.2))
+        }
+        .buttonStyle(.plain)
+        .frame(width: 22, height: 22)
+    }
+
+    private enum RatingTier { case star, like, mid, dislike }
+
+    private func toggleRating(mode: Int, tier: RatingTier) {
+        // Check if already in this tier BEFORE clearing
+        let wasInTier: Bool
+        switch tier {
+        case .star:    wasInTier = state.starredShaders.contains(mode)
+        case .like:    wasInTier = state.likedShaders.contains(mode)
+        case .mid:     wasInTier = state.midShaders.contains(mode)
+        case .dislike: wasInTier = state.dislikedShaders.contains(mode)
+        }
+
+        // Clear from all tiers
+        state.starredShaders.remove(mode)
+        state.likedShaders.remove(mode)
+        state.midShaders.remove(mode)
+        state.dislikedShaders.remove(mode)
+
+        // If it was already in this tier, leave unrated. Otherwise set it.
+        if !wasInTier {
+            switch tier {
+            case .star:    state.starredShaders.insert(mode)
+            case .like:    state.likedShaders.insert(mode)
+            case .mid:     state.midShaders.insert(mode)
+            case .dislike: state.dislikedShaders.insert(mode)
+            }
+        }
+    }
+
+    // MARK: - Export Ratings
+
+    private func exportRatings() {
+        var md = "# Shader Ratings\n\n"
+
+        let starred = shaderPresets.filter { state.starredShaders.contains($0.mode) }
+        let liked = shaderPresets.filter { state.likedShaders.contains($0.mode) }
+        let mid = shaderPresets.filter { state.midShaders.contains($0.mode) }
+        let disliked = shaderPresets.filter { state.dislikedShaders.contains($0.mode) }
+        let unrated = shaderPresets.filter {
+            !state.starredShaders.contains($0.mode) &&
+            !state.likedShaders.contains($0.mode) &&
+            !state.midShaders.contains($0.mode) &&
+            !state.dislikedShaders.contains($0.mode)
+        }
+
+        if !starred.isEmpty {
+            md += "## Best (starred)\n"
+            for p in starred { md += "- \(p.name) (mode \(p.mode))\n" }
+            md += "\n"
+        }
+
+        if !liked.isEmpty {
+            md += "## Good (thumbs up)\n"
+            for p in liked { md += "- \(p.name) (mode \(p.mode))\n" }
+            md += "\n"
+        }
+
+        if !mid.isEmpty {
+            md += "## Mid (okay)\n"
+            for p in mid { md += "- \(p.name) (mode \(p.mode))\n" }
+            md += "\n"
+        }
+
+        if !disliked.isEmpty {
+            md += "## Rejected (thumbs down)\n"
+            for p in disliked { md += "- \(p.name) (mode \(p.mode))\n" }
+            md += "\n"
+        }
+
+        if !unrated.isEmpty {
+            md += "## Unrated\n"
+            for p in unrated { md += "- \(p.name) (mode \(p.mode))\n" }
+            md += "\n"
+        }
+
+        // Write to project directory using FileManager for reliable path
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let fileURL = home.appendingPathComponent("Documents/windsurf projects/fadicode-shader-lab/shader-ratings.md")
+        try? md.write(to: fileURL, atomically: true, encoding: .utf8)
+
+        // Copy to clipboard
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(md, forType: .string)
+
+        // Visual feedback
+        showExported = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            showExported = false
         }
     }
 
@@ -339,6 +602,7 @@ struct DebugPanel: View {
     private let pixelPresets: [(label: String, size: Double)] = [
         ("Off",  0),
         ("4px",  4),
+        ("6px",  6),
         ("8px",  8),
         ("12px", 12),
     ]
@@ -355,26 +619,65 @@ struct DebugPanel: View {
     // MARK: - Shader Presets
 
     private let shaderPresets: [(mode: Int, name: String, icon: String)] = [
-        (0,  "Organic Flow",    "~"),
-        (1,  "Mandala",         "*"),
-        (2,  "Point Cloud",     "."),
-        (3,  "Aurora",          "/"),
-        (4,  "Pulse Grid",      "#"),
-        (5,  "Combined",        "+"),
-        (6,  "Light Grid",      "::"),
-        (7,  "Sinebow",         "S"),
-        (8,  "Gradient Spin",   "@"),
-        (9,  "Circle Wave",     "O"),
-        (10, "Kaleidoscope",    "K"),
-        (11, "Plasma",          "P"),
-        (12, "Voronoi",         "V"),
-        (13, "Spiral Galaxy",   "G"),
-        (14, "Ripple Pond",     "R"),
-        (15, "Lava Lamp",       "L"),
-        (16, "Sacred Geometry", "F"),
-        (17, "Warp Tunnel",     "T"),
-        (18, "Fractal Rings",   "Q"),
-        (19, "Moire",           "M"),
+        (0,  "Organic Flow",        "~"),
+        (1,  "Mandala",             "*"),
+        (2,  "Point Cloud",         "."),
+        (3,  "Aurora",              "/"),
+        (4,  "Pulse Grid",          "#"),
+        (5,  "Combined",            "+"),
+        (6,  "Light Grid",          "::"),
+        (7,  "Sinebow",             "S"),
+        (8,  "Gradient Spin",       "@"),
+        (9,  "Circle Wave",         "O"),
+        (10, "Kaleidoscope",        "K"),
+        (11, "Plasma",              "P"),
+        (12, "Voronoi",             "V"),
+        (13, "Spiral Galaxy",       "G"),
+        (14, "Ripple Pond",         "R"),
+        (15, "Lava Lamp",           "L"),
+        (16, "Sacred Geometry",     "F"),
+        (17, "Warp Tunnel",         "T"),
+        (18, "Fractal Rings",       "Q"),
+        (19, "Moire",               "M"),
+        (20, "Chrysanthemum",       "❁"),
+        (21, "Machine Elves",       "⌬"),
+        (22, "Hyperspace",          "◈"),
+        (23, "Jewel Lattice",       "◇"),
+        (24, "Neural Bloom",        "⟡"),
+        (25, "Ego Dissolution",     "∞"),
+        (26, "Folding Dimensions",  "⊿"),
+        (27, "Cymatics",            "≋"),
+        (28, "Cosmic Web",          "⟐"),
+        (29, "Topographic Flow",    "≈"),
+        (30, "Interference Crystal","✧"),
+        (31, "Nebula Cloud",        "☁"),
+        (32, "DNA Helix",           "⧖"),
+        (33, "Tessellation Dance",  "◬"),
+        (34, "Entity Presence",     "◉"),
+        (35, "Fractal Mandelbrot",  "⍟"),
+        (36, "Quantum Field",       "⟁"),
+        (37, "Geometric Alchemy",   "⬡"),
+        (38, "Wormhole",            "⊘"),
+        (39, "Celestial Clockwork", "⚙"),
+        (40, "Crystal Cavern",      "⬥"),
+        (41, "Electric Field",      "⚡"),
+        (42, "Resonance",           "∿"),
+        (43, "Spirit Molecule",     "⊛"),
+        (44, "Flower of Life",      "✿"),
+        (45, "Infinite Zoom",       "⌁"),
+        (46, "String Theory",       "∥"),
+        (47, "Penrose Tiling",      "◇"),
+        (48, "Akashic Field",       "∞"),
+        (49, "Breath of God",       "☼"),
+        (50, "Metatron's Cube",     "✡"),
+        (51, "Void Bloom",          "❀"),
+        (52, "Weaver's Loom",       "⌘"),
+        (53, "Timecrystal",         "⏣"),
+        (54, "Resonance Chamber",   "⊛"),
+        (55, "Event Horizon",       "◌"),
+        (56, "Architect's Gaze",    "◎"),
+        (57, "Sigil Network",       "⎔"),
+        (58, "Dream Catcher",       "◐"),
     ]
 
     // MARK: - Color Presets

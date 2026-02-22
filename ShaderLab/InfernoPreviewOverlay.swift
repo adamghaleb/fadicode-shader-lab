@@ -136,6 +136,172 @@ enum InfernoShader: String, CaseIterable, Identifiable {
             }
         }
     }
+
+    /// The Metal function name used with ShaderLibrary.
+    var metalFunctionName: String {
+        switch self {
+        case .none:             return ""
+        case .lightGrid:        return "lightGrid"
+        case .sinebow:          return "sinebow"
+        case .animatedGradient: return "animatedGradientFill"
+        case .circleWave:       return "circleWave"
+        case .infrared:         return "infrared"
+        case .interlace:        return "interlace"
+        case .checkerboard:     return "checkerboard"
+        case .rainbowNoise:     return "rainbowNoise"
+        case .whiteNoise:       return "whiteNoise"
+        case .shimmer:          return "shimmer"
+        case .water:            return "water"
+        case .wave:             return "wave"
+        case .relativeWave:     return "relativeWave"
+        case .emboss:           return "emboss"
+        case .chromatic:        return "colorPlanes"
+        case .swirl:            return "swirl"
+        case .pixellate:        return "pixellateTransition"
+        }
+    }
+
+    /// Generates a ready-to-paste Swift code snippet for this shader with the given parameter values.
+    func generateCodeSnippet(param1: Double, param2: Double, param3: Double, param4: Double) -> String {
+        guard self != .none else { return "" }
+
+        let defs = parameterDefs
+        let params = [param1, param2, param3, param4]
+        let funcName = metalFunctionName
+
+        // Build the shader argument list
+        var args: [String] = []
+
+        // Build per-shader arguments matching the actual ShaderLibrary calls
+        switch self {
+        // Color effects with (size, time, params...)
+        case .lightGrid, .shimmer:
+            args.append("        .float2(size),")
+            args.append("        .float(elapsed),")
+            for i in 0..<defs.count {
+                let comma = (i < defs.count - 1) ? "," : ""
+                let comment = defs[i].name.lowercased()
+                args.append("        .float(\(String(format: "%.2f", params[i])))\(comma)   // \(comment)")
+            }
+
+        case .circleWave:
+            args.append("        .float2(size),")
+            args.append("        .float(elapsed),")
+            for i in 0..<defs.count {
+                args.append("        .float(\(String(format: "%.2f", params[i]))),   // \(defs[i].name.lowercased())")
+            }
+            args.append("        .float2(CGPoint(x: 0.5, y: 0.5)),")
+            args.append("        .color(themeColor)")
+
+        case .sinebow:
+            args.append("        .float2(size),")
+            args.append("        .float(elapsed)")
+
+        case .animatedGradient:
+            args.append("        .float2(size),")
+            args.append("        .float(elapsed)")
+
+        case .infrared:
+            break // no arguments
+
+        case .interlace:
+            args.append("        .float(\(String(format: "%.2f", params[0]))),   // \(defs[0].name.lowercased())")
+            args.append("        .color(.black),")
+            args.append("        .float(\(String(format: "%.2f", params[1])))    // \(defs[1].name.lowercased())")
+
+        case .checkerboard:
+            args.append("        .color(themeColor.opacity(0.3)),")
+            args.append("        .float(\(String(format: "%.2f", params[0])))    // \(defs[0].name.lowercased())")
+
+        case .rainbowNoise, .whiteNoise:
+            args.append("        .float(elapsed)")
+
+        // Distortion effects
+        case .water:
+            args.append("        .float2(size),")
+            args.append("        .float(elapsed),")
+            for i in 0..<defs.count {
+                let comma = (i < defs.count - 1) ? "," : ""
+                args.append("        .float(\(String(format: "%.2f", params[i])))\(comma)   // \(defs[i].name.lowercased())")
+            }
+
+        case .wave:
+            args.append("        .float(elapsed),")
+            for i in 0..<defs.count {
+                let comma = (i < defs.count - 1) ? "," : ""
+                args.append("        .float(\(String(format: "%.2f", params[i])))\(comma)   // \(defs[i].name.lowercased())")
+            }
+
+        case .relativeWave:
+            args.append("        .float2(size),")
+            args.append("        .float(elapsed),")
+            for i in 0..<defs.count {
+                let comma = (i < defs.count - 1) ? "," : ""
+                args.append("        .float(\(String(format: "%.2f", params[i])))\(comma)   // \(defs[i].name.lowercased())")
+            }
+
+        // Layer effects
+        case .emboss:
+            args.append("        .float(\(String(format: "%.2f", params[0])))    // \(defs[0].name.lowercased())")
+
+        case .chromatic:
+            args.append("        .float2(CGPoint(x: amount, y: amount))  // amount = sin(elapsed * 2) * \(String(format: "%.2f", params[0]))")
+
+        case .swirl:
+            args.append("        .float2(size),")
+            args.append("        .float(amount),  // amount = (sin(elapsed * \(String(format: "%.2f", params[1]))) + 1) / 2")
+            args.append("        .float(\(String(format: "%.2f", params[0])))    // \(defs[0].name.lowercased())")
+
+        case .pixellate:
+            args.append("        .float2(size),")
+            args.append("        .float(amount),  // amount = (sin(elapsed * 0.3) + 1) / 2")
+            args.append("        .float(\(String(format: "%.2f", params[0]))),   // \(defs[0].name.lowercased())")
+            args.append("        .float(\(String(format: "%.2f", params[1])))    // \(defs[1].name.lowercased())")
+
+        case .none:
+            break
+        }
+
+        // Build the full snippet
+        var lines: [String] = []
+        lines.append("// Inferno: \(rawValue)")
+
+        let shaderCall: String
+        if args.isEmpty {
+            shaderCall = "ShaderLibrary.\(funcName)()"
+        } else {
+            shaderCall = "ShaderLibrary.\(funcName)(\n\(args.joined(separator: "\n"))\n    )"
+        }
+
+        switch shaderType {
+        case .none:
+            break
+
+        case .color:
+            lines.append("Rectangle()")
+            lines.append("    .fill(Color.white)")
+            lines.append("    .colorEffect(\(shaderCall))")
+            lines.append("    .drawingGroup()")
+
+        case .layer:
+            lines.append("Rectangle()")
+            lines.append("    .fill(Color.white)")
+            lines.append("    .layerEffect(")
+            lines.append("        \(shaderCall),")
+            lines.append("        maxSampleOffset: CGSize(width: 20, height: 20)")
+            lines.append("    )")
+            lines.append("    .drawingGroup()")
+
+        case .distortion:
+            lines.append("Rectangle()")
+            lines.append("    .distortionEffect(")
+            lines.append("        \(shaderCall),")
+            lines.append("        maxSampleOffset: CGSize(width: 20, height: 20)")
+            lines.append("    )")
+        }
+
+        return lines.joined(separator: "\n")
+    }
 }
 
 /// Overlay that applies the selected Inferno shader on top of the terminal content.

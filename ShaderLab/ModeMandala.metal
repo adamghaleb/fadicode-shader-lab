@@ -9,7 +9,8 @@ half4 mandalaEffect(
     float themeR, float themeG, float themeB,
     float viewWidth, float viewHeight,
     float pixelSize, float gridOpacity,
-    float posterizeLevels
+    float posterizeLevels,
+    float hueSpread, float complementMix
 ) {
     if (intensity < 0.001) return half4(0.0h);
     PipelineSetup s = pipelineSetup(position, viewWidth, viewHeight, pixelSize, gridOpacity);
@@ -25,5 +26,5 @@ half4 mandalaEffect(
     ring += smoothstep(0.015, 0.0, abs(s.dist - 0.8 - 0.05 * sin(time * 0.3)));
     float lum = clamp(pattern * 1.2 + ring * 0.6, 0.0, 1.0);
 
-    return pipelineFinalize(lum, intensity, float3(themeR, themeG, themeB), posterizeLevels, s.gridDarken);
+    return pipelineFinalize(lum, intensity, float3(themeR, themeG, themeB), posterizeLevels, s.gridDarken, hueSpread, complementMix);
 }

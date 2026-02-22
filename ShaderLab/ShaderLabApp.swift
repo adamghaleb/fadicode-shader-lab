@@ -29,8 +29,9 @@ class TerminalState: ObservableObject {
     @Published var themeColor: NSColor = NSColor(red: 0.3, green: 0.6, blue: 1.0, alpha: 1.0)
 
     // Shader tuning
-    @Published var shaderMode: Int = 5 // 0-5, default Combined
+    @Published var shaderMode: Int = 5 // 0-58, default Combined
     @Published var shaderSpeed: Double = 1.0
+    @Published var transitionDuration: Double = 2.0 // seconds for shader-to-shader dissolve
     @Published var maxIntensity: Double = 1.0
     @Published var focusedIntensity: Double = 0.08
     @Published var focusInDuration: Double = 0.2
@@ -42,6 +43,25 @@ class TerminalState: ObservableObject {
 
     // Posterization
     @Published var posterizeLevels: Double = 5.0 // 0 = off (plain tint), 2+ = posterize bands
+    @Published var hueSpread: Double = 0.10      // analogous hue spread (0 = mono, 0.25 = wide)
+    @Published var complementMix: Double = 0.0   // complementary accent in highlights (0 = off)
+
+    // Shader ratings: star = best, liked = good, mid = okay, disliked = nope
+    // Persisted to UserDefaults
+    private var isLoading = false
+
+    @Published var starredShaders: Set<Int> = [] {
+        didSet { if !isLoading { saveRatings() } }
+    }
+    @Published var likedShaders: Set<Int> = [] {
+        didSet { if !isLoading { saveRatings() } }
+    }
+    @Published var midShaders: Set<Int> = [] {
+        didSet { if !isLoading { saveRatings() } }
+    }
+    @Published var dislikedShaders: Set<Int> = [] {
+        didSet { if !isLoading { saveRatings() } }
+    }
 
     // Inferno shader preview
     @Published var infernoShader: InfernoShader = .none {
@@ -56,6 +76,59 @@ class TerminalState: ObservableObject {
     @Published var infernoParam2: Double = 0.0
     @Published var infernoParam3: Double = 0.0
     @Published var infernoParam4: Double = 0.0
+
+    // Pre-seeded ratings from review session
+    private static let defaultStarred: Set<Int> = [12, 13, 21, 26, 27, 28, 30, 34]
+    // Voronoi(12), Spiral Galaxy(13), Machine Elves(21), Folding Dimensions(26),
+    // Cymatics(27), Cosmic Web(28), Interference Crystal(30), Entity Presence(34)
+
+    private static let defaultLiked: Set<Int> = [6, 7, 8, 10, 15, 16, 19, 20, 23, 25, 32]
+    // Light Grid(6), Sinebow(7), Gradient Spin(8), Kaleidoscope(10), Lava Lamp(15),
+    // Sacred Geometry(16), Moire(19), Chrysanthemum(20), Jewel Lattice(23),
+    // Ego Dissolution(25), DNA Helix(32)
+
+    private static let defaultMid: Set<Int> = [2, 11, 17, 18, 22, 31, 33]
+    // Point Cloud(2), Plasma(11), Warp Tunnel(17), Fractal Rings(18),
+    // Hyperspace(22), Nebula Cloud(31), Tessellation Dance(33)
+
+    private static let defaultDisliked: Set<Int> = [0, 1, 3, 4, 5, 9, 14, 24, 29]
+    // Organic Flow(0), Mandala(1), Aurora(3), Pulse Grid(4), Combined(5),
+    // Circle Wave(9), Ripple Pond(14), Neural Bloom(24), Topographic Flow(29)
+
+    init() {
+        isLoading = true
+        let hasExisting = UserDefaults.standard.array(forKey: "starredShaders") != nil
+        if hasExisting {
+            if let arr = UserDefaults.standard.array(forKey: "starredShaders") as? [Int] {
+                starredShaders = Set(arr)
+            }
+            if let arr = UserDefaults.standard.array(forKey: "likedShaders") as? [Int] {
+                likedShaders = Set(arr)
+            }
+            if let arr = UserDefaults.standard.array(forKey: "midShaders") as? [Int] {
+                midShaders = Set(arr)
+            }
+            if let arr = UserDefaults.standard.array(forKey: "dislikedShaders") as? [Int] {
+                dislikedShaders = Set(arr)
+            }
+        } else {
+            // First launch: seed with pre-existing ratings
+            starredShaders = Self.defaultStarred
+            likedShaders = Self.defaultLiked
+            midShaders = Self.defaultMid
+            dislikedShaders = Self.defaultDisliked
+            // Persist so next launch loads from UserDefaults
+            saveRatings()
+        }
+        isLoading = false
+    }
+
+    private func saveRatings() {
+        UserDefaults.standard.set(Array(starredShaders), forKey: "starredShaders")
+        UserDefaults.standard.set(Array(likedShaders), forKey: "likedShaders")
+        UserDefaults.standard.set(Array(midShaders), forKey: "midShaders")
+        UserDefaults.standard.set(Array(dislikedShaders), forKey: "dislikedShaders")
+    }
 
     func resetInfernoParams() {
         let defs = infernoShader.parameterDefs
@@ -87,7 +160,10 @@ struct ContentView: View {
                     focusOutDuration: state.focusOutDuration,
                     pixelSize: state.pixelSize,
                     gridOpacity: state.gridOpacity,
-                    posterizeLevels: state.posterizeLevels
+                    posterizeLevels: state.posterizeLevels,
+                    hueSpread: state.hueSpread,
+                    complementMix: state.complementMix,
+                    transitionDuration: state.transitionDuration
                 )
 
                 TaskFlashOverlay(

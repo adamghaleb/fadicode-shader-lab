@@ -34,6 +34,47 @@
 		B10018 /* ModeWarpTunnel.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20018; };
 		B10019 /* ModeFractalRings.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20019; };
 		B10020 /* ModeMoire.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20020; };
+		C10001 /* ModeChrysanthemum.metal in Sources */ = {isa = PBXBuildFile; fileRef = C20001; };
+		C10002 /* ModeMachineElves.metal in Sources */ = {isa = PBXBuildFile; fileRef = C20002; };
+		C10003 /* ModeHyperspace.metal in Sources */ = {isa = PBXBuildFile; fileRef = C20003; };
+		C10004 /* ModeJewelLattice.metal in Sources */ = {isa = PBXBuildFile; fileRef = C20004; };
+		C10005 /* ModeNeuralBloom.metal in Sources */ = {isa = PBXBuildFile; fileRef = C20005; };
+		C10006 /* ModeEgoDissolution.metal in Sources */ = {isa = PBXBuildFile; fileRef = C20006; };
+		C10007 /* ModeFoldingDimensions.metal in Sources */ = {isa = PBXBuildFile; fileRef = C20007; };
+		C10008 /* ModeCymatics.metal in Sources */ = {isa = PBXBuildFile; fileRef = C20008; };
+		C10009 /* ModeCosmicWeb.metal in Sources */ = {isa = PBXBuildFile; fileRef = C20009; };
+		C10010 /* ModeTopographicFlow.metal in Sources */ = {isa = PBXBuildFile; fileRef = C20010; };
+		C10011 /* ModeInterferenceCrystal.metal in Sources */ = {isa = PBXBuildFile; fileRef = C20011; };
+		C10012 /* ModeNebulaCloud.metal in Sources */ = {isa = PBXBuildFile; fileRef = C20012; };
+		C10013 /* ModeDNAHelix.metal in Sources */ = {isa = PBXBuildFile; fileRef = C20013; };
+		C10014 /* ModeTessellationDance.metal in Sources */ = {isa = PBXBuildFile; fileRef = C20014; };
+		C10015 /* ModeEntityPresence.metal in Sources */ = {isa = PBXBuildFile; fileRef = C20015; };
+		D10001 /* ModeMetatronsCube.metal in Sources */ = {isa = PBXBuildFile; fileRef = D20001; };
+		D10002 /* ModeQuantumField.metal in Sources */ = {isa = PBXBuildFile; fileRef = D20002; };
+		D10003 /* ModeTimecrystal.metal in Sources */ = {isa = PBXBuildFile; fileRef = D20003; };
+		D10004 /* ModeArchitectsGaze.metal in Sources */ = {isa = PBXBuildFile; fileRef = D20004; };
+		D10005 /* ModeResonanceChamber.metal in Sources */ = {isa = PBXBuildFile; fileRef = D20005; };
+		D10006 /* ModeVoidBloom.metal in Sources */ = {isa = PBXBuildFile; fileRef = D20006; };
+		D10007 /* ModeWeaversLoom.metal in Sources */ = {isa = PBXBuildFile; fileRef = D20007; };
+		D10008 /* ModeEventHorizon.metal in Sources */ = {isa = PBXBuildFile; fileRef = D20008; };
+		D10009 /* ModeSigilNetwork.metal in Sources */ = {isa = PBXBuildFile; fileRef = D20009; };
+		D10010 /* ModeDreamCatcher.metal in Sources */ = {isa = PBXBuildFile; fileRef = D20010; };
+		E10001 /* ModeFractalMandelbrot.metal in Sources */ = {isa = PBXBuildFile; fileRef = E20001; };
+		E10002 /* ModeGeometricAlchemy.metal in Sources */ = {isa = PBXBuildFile; fileRef = E20002; };
+		E10003 /* ModeWormhole.metal in Sources */ = {isa = PBXBuildFile; fileRef = E20003; };
+		E10004 /* ModeCelestialClockwork.metal in Sources */ = {isa = PBXBuildFile; fileRef = E20004; };
+		E10005 /* ModeCrystalCavern.metal in Sources */ = {isa = PBXBuildFile; fileRef = E20005; };
+		E10006 /* ModeElectricField.metal in Sources */ = {isa = PBXBuildFile; fileRef = E20006; };
+		E10007 /* ModeResonance.metal in Sources */ = {isa = PBXBuildFile; fileRef = E20007; };
+		E10008 /* ModeSpiritMolecule.metal in Sources */ = {isa = PBXBuildFile; fileRef = E20008; };
+		E10009 /* ModeFlowerOfLife.metal in Sources */ = {isa = PBXBuildFile; fileRef = E20009; };
+		E10010 /* ModeInfiniteZoom.metal in Sources */ = {isa = PBXBuildFile; fileRef = E20010; };
+		E10011 /* ModeStringTheory.metal in Sources */ = {isa = PBXBuildFile; fileRef = E20011; };
+		E10012 /* ModePenroseTiling.metal in Sources */ = {isa = PBXBuildFile; fileRef = E20012; };
+		E10013 /* ModeAkashicField.metal in Sources */ = {isa = PBXBuildFile; fileRef = E20013; };
+		E10014 /* ModeBreathOfGod.metal in Sources */ = {isa = PBXBuildFile; fileRef = E20014; };
+		F10001 /* TransitionDissolve.metal in Sources */ = {isa = PBXBuildFile; fileRef = F20001; };
+		F10002 /* PostProcess.metal in Sources */ = {isa = PBXBuildFile; fileRef = F20002; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -67,6 +108,47 @@
 		B20020 /* ModeMoire.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeMoire.metal; sourceTree = "<group>"; };
 		B30001 /* ShaderUtils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ShaderUtils.h; sourceTree = "<group>"; };
 		B30002 /* WorkingStatePipeline.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WorkingStatePipeline.h; sourceTree = "<group>"; };
+		C20001 /* ModeChrysanthemum.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeChrysanthemum.metal; sourceTree = "<group>"; };
+		C20002 /* ModeMachineElves.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeMachineElves.metal; sourceTree = "<group>"; };
+		C20003 /* ModeHyperspace.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeHyperspace.metal; sourceTree = "<group>"; };
+		C20004 /* ModeJewelLattice.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeJewelLattice.metal; sourceTree = "<group>"; };
+		C20005 /* ModeNeuralBloom.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeNeuralBloom.metal; sourceTree = "<group>"; };
+		C20006 /* ModeEgoDissolution.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeEgoDissolution.metal; sourceTree = "<group>"; };
+		C20007 /* ModeFoldingDimensions.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeFoldingDimensions.metal; sourceTree = "<group>"; };
+		C20008 /* ModeCymatics.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeCymatics.metal; sourceTree = "<group>"; };
+		C20009 /* ModeCosmicWeb.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeCosmicWeb.metal; sourceTree = "<group>"; };
+		C20010 /* ModeTopographicFlow.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeTopographicFlow.metal; sourceTree = "<group>"; };
+		C20011 /* ModeInterferenceCrystal.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeInterferenceCrystal.metal; sourceTree = "<group>"; };
+		C20012 /* ModeNebulaCloud.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeNebulaCloud.metal; sourceTree = "<group>"; };
+		C20013 /* ModeDNAHelix.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeDNAHelix.metal; sourceTree = "<group>"; };
+		C20014 /* ModeTessellationDance.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeTessellationDance.metal; sourceTree = "<group>"; };
+		C20015 /* ModeEntityPresence.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeEntityPresence.metal; sourceTree = "<group>"; };
+		D20001 /* ModeMetatronsCube.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeMetatronsCube.metal; sourceTree = "<group>"; };
+		D20002 /* ModeQuantumField.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeQuantumField.metal; sourceTree = "<group>"; };
+		D20003 /* ModeTimecrystal.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeTimecrystal.metal; sourceTree = "<group>"; };
+		D20004 /* ModeArchitectsGaze.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeArchitectsGaze.metal; sourceTree = "<group>"; };
+		D20005 /* ModeResonanceChamber.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeResonanceChamber.metal; sourceTree = "<group>"; };
+		D20006 /* ModeVoidBloom.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeVoidBloom.metal; sourceTree = "<group>"; };
+		D20007 /* ModeWeaversLoom.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeWeaversLoom.metal; sourceTree = "<group>"; };
+		D20008 /* ModeEventHorizon.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeEventHorizon.metal; sourceTree = "<group>"; };
+		D20009 /* ModeSigilNetwork.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeSigilNetwork.metal; sourceTree = "<group>"; };
+		D20010 /* ModeDreamCatcher.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeDreamCatcher.metal; sourceTree = "<group>"; };
+		E20001 /* ModeFractalMandelbrot.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeFractalMandelbrot.metal; sourceTree = "<group>"; };
+		E20002 /* ModeGeometricAlchemy.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeGeometricAlchemy.metal; sourceTree = "<group>"; };
+		E20003 /* ModeWormhole.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeWormhole.metal; sourceTree = "<group>"; };
+		E20004 /* ModeCelestialClockwork.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeCelestialClockwork.metal; sourceTree = "<group>"; };
+		E20005 /* ModeCrystalCavern.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeCrystalCavern.metal; sourceTree = "<group>"; };
+		E20006 /* ModeElectricField.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeElectricField.metal; sourceTree = "<group>"; };
+		E20007 /* ModeResonance.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeResonance.metal; sourceTree = "<group>"; };
+		E20008 /* ModeSpiritMolecule.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeSpiritMolecule.metal; sourceTree = "<group>"; };
+		E20009 /* ModeFlowerOfLife.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeFlowerOfLife.metal; sourceTree = "<group>"; };
+		E20010 /* ModeInfiniteZoom.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeInfiniteZoom.metal; sourceTree = "<group>"; };
+		E20011 /* ModeStringTheory.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeStringTheory.metal; sourceTree = "<group>"; };
+		E20012 /* ModePenroseTiling.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModePenroseTiling.metal; sourceTree = "<group>"; };
+		E20013 /* ModeAkashicField.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeAkashicField.metal; sourceTree = "<group>"; };
+		E20014 /* ModeBreathOfGod.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeBreathOfGod.metal; sourceTree = "<group>"; };
+		F20001 /* TransitionDissolve.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = TransitionDissolve.metal; sourceTree = "<group>"; };
+		F20002 /* PostProcess.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = PostProcess.metal; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -120,6 +202,47 @@
 				B20018 /* ModeWarpTunnel.metal */,
 				B20019 /* ModeFractalRings.metal */,
 				B20020 /* ModeMoire.metal */,
+				C20001 /* ModeChrysanthemum.metal */,
+				C20002 /* ModeMachineElves.metal */,
+				C20003 /* ModeHyperspace.metal */,
+				C20004 /* ModeJewelLattice.metal */,
+				C20005 /* ModeNeuralBloom.metal */,
+				C20006 /* ModeEgoDissolution.metal */,
+				C20007 /* ModeFoldingDimensions.metal */,
+				C20008 /* ModeCymatics.metal */,
+				C20009 /* ModeCosmicWeb.metal */,
+				C20010 /* ModeTopographicFlow.metal */,
+				C20011 /* ModeInterferenceCrystal.metal */,
+				C20012 /* ModeNebulaCloud.metal */,
+				C20013 /* ModeDNAHelix.metal */,
+				C20014 /* ModeTessellationDance.metal */,
+				C20015 /* ModeEntityPresence.metal */,
+				D20001 /* ModeMetatronsCube.metal */,
+				D20002 /* ModeQuantumField.metal */,
+				D20003 /* ModeTimecrystal.metal */,
+				D20004 /* ModeArchitectsGaze.metal */,
+				D20005 /* ModeResonanceChamber.metal */,
+				D20006 /* ModeVoidBloom.metal */,
+				D20007 /* ModeWeaversLoom.metal */,
+				D20008 /* ModeEventHorizon.metal */,
+				D20009 /* ModeSigilNetwork.metal */,
+				D20010 /* ModeDreamCatcher.metal */,
+				E20001 /* ModeFractalMandelbrot.metal */,
+				E20002 /* ModeGeometricAlchemy.metal */,
+				E20003 /* ModeWormhole.metal */,
+				E20004 /* ModeCelestialClockwork.metal */,
+				E20005 /* ModeCrystalCavern.metal */,
+				E20006 /* ModeElectricField.metal */,
+				E20007 /* ModeResonance.metal */,
+				E20008 /* ModeSpiritMolecule.metal */,
+				E20009 /* ModeFlowerOfLife.metal */,
+				E20010 /* ModeInfiniteZoom.metal */,
+				E20011 /* ModeStringTheory.metal */,
+				E20012 /* ModePenroseTiling.metal */,
+				E20013 /* ModeAkashicField.metal */,
+				E20014 /* ModeBreathOfGod.metal */,
+				F20001 /* TransitionDissolve.metal */,
+				F20002 /* PostProcess.metal */,
 			);
 			path = ShaderLab;
 			sourceTree = "<group>";
@@ -211,6 +334,47 @@
 				B10018 /* ModeWarpTunnel.metal in Sources */,
 				B10019 /* ModeFractalRings.metal in Sources */,
 				B10020 /* ModeMoire.metal in Sources */,
+				C10001 /* ModeChrysanthemum.metal in Sources */,
+				C10002 /* ModeMachineElves.metal in Sources */,
+				C10003 /* ModeHyperspace.metal in Sources */,
+				C10004 /* ModeJewelLattice.metal in Sources */,
+				C10005 /* ModeNeuralBloom.metal in Sources */,
+				C10006 /* ModeEgoDissolution.metal in Sources */,
+				C10007 /* ModeFoldingDimensions.metal in Sources */,
+				C10008 /* ModeCymatics.metal in Sources */,
+				C10009 /* ModeCosmicWeb.metal in Sources */,
+				C10010 /* ModeTopographicFlow.metal in Sources */,
+				C10011 /* ModeInterferenceCrystal.metal in Sources */,
+				C10012 /* ModeNebulaCloud.metal in Sources */,
+				C10013 /* ModeDNAHelix.metal in Sources */,
+				C10014 /* ModeTessellationDance.metal in Sources */,
+				C10015 /* ModeEntityPresence.metal in Sources */,
+				D10001 /* ModeMetatronsCube.metal in Sources */,
+				D10002 /* ModeQuantumField.metal in Sources */,
+				D10003 /* ModeTimecrystal.metal in Sources */,
+				D10004 /* ModeArchitectsGaze.metal in Sources */,
+				D10005 /* ModeResonanceChamber.metal in Sources */,
+				D10006 /* ModeVoidBloom.metal in Sources */,
+				D10007 /* ModeWeaversLoom.metal in Sources */,
+				D10008 /* ModeEventHorizon.metal in Sources */,
+				D10009 /* ModeSigilNetwork.metal in Sources */,
+				D10010 /* ModeDreamCatcher.metal in Sources */,
+				E10001 /* ModeFractalMandelbrot.metal in Sources */,
+				E10002 /* ModeGeometricAlchemy.metal in Sources */,
+				E10003 /* ModeWormhole.metal in Sources */,
+				E10004 /* ModeCelestialClockwork.metal in Sources */,
+				E10005 /* ModeCrystalCavern.metal in Sources */,
+				E10006 /* ModeElectricField.metal in Sources */,
+				E10007 /* ModeResonance.metal in Sources */,
+				E10008 /* ModeSpiritMolecule.metal in Sources */,
+				E10009 /* ModeFlowerOfLife.metal in Sources */,
+				E10010 /* ModeInfiniteZoom.metal in Sources */,
+				E10011 /* ModeStringTheory.metal in Sources */,
+				E10012 /* ModePenroseTiling.metal in Sources */,
+				E10013 /* ModeAkashicField.metal in Sources */,
+				E10014 /* ModeBreathOfGod.metal in Sources */,
+				F10001 /* TransitionDissolve.metal in Sources */,
+				F10002 /* PostProcess.metal in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
