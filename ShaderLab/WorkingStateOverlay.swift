@@ -17,6 +17,7 @@ struct WorkingStateOverlay: View {
     var focusOutDuration: Double = 0.5
     var pixelSize: Double = 0.0
     var gridOpacity: Double = 0.6
+    var posterizeLevels: Double = 5.0
 
     @State private var intensity: Double = 0.0
     @State private var isVisible: Bool = false
@@ -105,7 +106,8 @@ struct WorkingStateOverlay: View {
                             .float(Float(geo.size.height)),
                             .float(Float(mode)),
                             .float(Float(pixelSize)),
-                            .float(Float(gridOpacity))
+                            .float(Float(gridOpacity)),
+                            .float(Float(posterizeLevels))
                         )
                     )
                     // drawingGroup forces an offscreen Metal render pass,

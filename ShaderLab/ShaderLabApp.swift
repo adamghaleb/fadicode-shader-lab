@@ -39,6 +39,9 @@ class TerminalState: ObservableObject {
     // Pixelation
     @Published var pixelSize: Double = 0.0 // 0 = off, otherwise block size in points
     @Published var gridOpacity: Double = 0.6
+
+    // Posterization
+    @Published var posterizeLevels: Double = 5.0 // 0 = off (plain tint), 2+ = posterize bands
 }
 
 struct ContentView: View {
@@ -61,7 +64,8 @@ struct ContentView: View {
                     focusInDuration: state.focusInDuration,
                     focusOutDuration: state.focusOutDuration,
                     pixelSize: state.pixelSize,
-                    gridOpacity: state.gridOpacity
+                    gridOpacity: state.gridOpacity,
+                    posterizeLevels: state.posterizeLevels
                 )
 
                 TaskFlashOverlay(

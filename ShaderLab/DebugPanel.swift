@@ -159,6 +159,26 @@ struct DebugPanel: View {
 
                 Divider().background(Color.white.opacity(0.2))
 
+                // MARK: - Posterization
+                sectionHeader("Posterization")
+
+                HStack {
+                    ForEach(posterizePresets, id: \.levels) { preset in
+                        Button(preset.label) {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                state.posterizeLevels = preset.levels
+                            }
+                        }
+                        .buttonStyle(DebugButtonStyle(
+                            color: state.posterizeLevels == preset.levels ? Color(nsColor: state.themeColor) : .gray
+                        ))
+                    }
+                }
+
+                sliderRow("Levels", value: $state.posterizeLevels, range: 0...12)
+
+                Divider().background(Color.white.opacity(0.2))
+
                 // MARK: - Shader Tuning
                 sectionHeader("Shader Tuning")
 
@@ -263,6 +283,15 @@ struct DebugPanel: View {
         ("4px",  4),
         ("8px",  8),
         ("12px", 12),
+    ]
+
+    // MARK: - Posterize Presets
+
+    private let posterizePresets: [(label: String, levels: Double)] = [
+        ("Off",  0),
+        ("3",    3),
+        ("5",    5),
+        ("8",    8),
     ]
 
     // MARK: - Shader Presets
