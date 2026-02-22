@@ -20,7 +20,7 @@ struct WorkingStateOverlay: View {
     var posterizeLevels: Double = 5.0
     var hueSpread: Double = 0.10
     var complementMix: Double = 0.0
-    var transitionDuration: Double = 2.0
+    var transitionDuration: Double = 3.0
 
     @State private var intensity: Double = 0.0
     @State private var isVisible: Bool = false
@@ -229,7 +229,9 @@ struct WorkingStateOverlay: View {
                     // Transition in progress
                     let transElapsed = timeline.date.timeIntervalSince(transStart)
                     let rawProgress = min(transElapsed / max(transitionDuration, 0.01), 1.0)
-                    let progress = rawProgress * rawProgress * (3.0 - 2.0 * rawProgress)
+                    // Quintic smoothstep — gentler ease-in/out for cinematic dissolve
+                    let p = rawProgress
+                    let progress = p * p * p * (p * (p * 6.0 - 15.0) + 10.0)
 
                     let _ = {
                         if rawProgress >= 1.0 {

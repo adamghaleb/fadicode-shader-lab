@@ -31,7 +31,7 @@ class TerminalState: ObservableObject {
     // Shader tuning
     @Published var shaderMode: Int = 5 // 0-58, default Combined
     @Published var shaderSpeed: Double = 1.0
-    @Published var transitionDuration: Double = 2.0 // seconds for shader-to-shader dissolve
+    @Published var transitionDuration: Double = 3.0 // seconds for shader-to-shader dissolve
     @Published var maxIntensity: Double = 1.0
     @Published var focusedIntensity: Double = 0.08
     @Published var focusInDuration: Double = 0.2

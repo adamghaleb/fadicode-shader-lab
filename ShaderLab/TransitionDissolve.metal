@@ -2,9 +2,10 @@
 using namespace metal;
 
 // ============================================================
-// Luminance-staggered crossfade transition.
+// Cinematic luminance dissolve transition.
 // Bright areas of the new shader fade in first while bright areas
 // of the old shader fade out first — sweeping from white to black.
+// Wide softness bands create dreamy overlap between the two layers.
 //
 // These effects run AFTER the post-process (theme + posterize + pixelate),
 // so they extract perceived luminance from the themed color.
@@ -25,9 +26,10 @@ half4 lumaFadeOutEffect(
 
     float lum = perceivedLum(currentColor);
 
-    // Threshold sweeps from 1→0: brightest parts disappear first
+    // Threshold sweeps from 1→0: brightest parts disappear first.
+    // Wide softness = cinematic overlap where both layers coexist.
     float threshold = 1.0 - progress;
-    float softness = 0.15;
+    float softness = 0.4;
     float keep = 1.0 - smoothstep(threshold - softness, threshold + softness, lum);
 
     half4 result = currentColor;
@@ -46,10 +48,11 @@ half4 lumaFadeInEffect(
 
     float lum = perceivedLum(currentColor);
 
-    // Threshold sweeps from 1→0: brightest parts appear first
+    // Threshold sweeps from 1→0: brightest parts appear first.
+    // smoothstep(low, high, lum) → bright pixels reveal early.
     float threshold = 1.0 - progress;
-    float softness = 0.15;
-    float reveal = smoothstep(threshold + softness, threshold - softness, lum);
+    float softness = 0.4;
+    float reveal = smoothstep(threshold - softness, threshold + softness, lum);
 
     half4 result = currentColor;
     result.a *= half(reveal);
