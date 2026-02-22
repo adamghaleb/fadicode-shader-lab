@@ -5,6 +5,7 @@ struct DebugPanel: View {
     @EnvironmentObject var state: TerminalState
     @State private var showCopied: Bool = false
     @State private var showExported: Bool = false
+    @State private var expandedShader: Int? = nil
 
     var body: some View {
         ScrollView {
@@ -95,6 +96,47 @@ struct DebugPanel: View {
                 ))
                 .font(.system(size: 12, design: .monospaced))
                 .foregroundColor(.white.opacity(0.7))
+
+                Divider().background(Color.white.opacity(0.2))
+
+                // MARK: - Palette
+                sectionHeader("Palette")
+
+                // Mode picker: Auto / Theme / Custom
+                HStack(spacing: 6) {
+                    ForEach(PaletteMode.allCases, id: \.rawValue) { mode in
+                        Button(mode.label) {
+                            state.paletteMode = mode
+                        }
+                        .buttonStyle(DebugButtonStyle(
+                            color: state.paletteMode == mode ? Color(nsColor: state.themeColor) : .gray
+                        ))
+                    }
+                }
+
+                // Gradient preview strip
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(state.resolvedPalette.swiftUIGradient)
+                    .frame(height: 20)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
+                    )
+
+                // Mode-specific controls
+                switch state.paletteMode {
+                case .auto:
+                    sliderRow("Hue Spread", value: $state.hueSpread, range: 0.0...0.50)
+                    sliderRow("Complement", value: $state.complementMix, range: 0.0...0.5)
+                    sliderRow("Saturation", value: $state.paletteSaturation, range: 0.0...2.0)
+                    sliderRow("Contrast", value: $state.paletteContrast, range: 0.5...2.0)
+
+                case .preset:
+                    presetPaletteGrid
+
+                case .custom:
+                    customPaletteEditor
+                }
 
                 Divider().background(Color.white.opacity(0.2))
 
@@ -253,6 +295,8 @@ struct DebugPanel: View {
                 // MARK: - Shader Tuning
                 sectionHeader("Shader Tuning")
 
+                sliderRow("Focused Opacity", value: $state.focusedOpacity, range: 0.0...1.0)
+
                 // MARK: - Pixelation
                 sectionHeader("Pixelation")
 
@@ -271,6 +315,8 @@ struct DebugPanel: View {
 
                 sliderRow("Block Size", value: $state.pixelSize, range: 0...24)
                 sliderRow("Grid Lines", value: $state.gridOpacity, range: 0.0...5.0)
+                sliderRow("Grid (Focused)", value: $state.focusedGridOpacity, range: 0.0...5.0)
+                sliderRow("Resolution Scale", value: $state.resolutionScale, range: 0.1...1.0)
 
                 Divider().background(Color.white.opacity(0.2))
 
@@ -291,8 +337,6 @@ struct DebugPanel: View {
                 }
 
                 sliderRow("Levels", value: $state.posterizeLevels, range: 0...12)
-                sliderRow("Hue Spread", value: $state.hueSpread, range: 0.0...0.25)
-                sliderRow("Complement", value: $state.complementMix, range: 0.0...0.5)
 
                 Divider().background(Color.white.opacity(0.2))
 
@@ -303,8 +347,38 @@ struct DebugPanel: View {
                 sliderRow("Transition", value: $state.transitionDuration, range: 0.3...5.0)
                 sliderRow("Unfocused Intensity", value: $state.maxIntensity, range: 0.0...1.5)
                 sliderRow("Focused Intensity", value: $state.focusedIntensity, range: 0.0...0.5)
+                sliderRow("Focused Opacity", value: $state.focusedOpacity, range: 0.0...1.0)
                 sliderRow("Focus-in (ms)", value: $state.focusInDuration, range: 0.05...1.0)
                 sliderRow("Focus-out (ms)", value: $state.focusOutDuration, range: 0.1...2.0)
+
+                Divider().background(Color.white.opacity(0.2))
+
+                // MARK: - Hot Reload
+                sectionHeader("Hot Reload")
+
+                HStack {
+                    Toggle(isOn: $state.hotReloadEnabled) {
+                        Text("Auto Rebuild")
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundColor(.white)
+                    }
+                    .toggleStyle(.switch)
+                    .tint(Color(nsColor: state.themeColor))
+
+                    Spacer()
+
+                    statusPill(
+                        state.fileWatcher.status.rawValue,
+                        color: hotReloadStatusColor
+                    )
+                }
+
+                if let error = state.fileWatcher.lastError {
+                    Text(error)
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(.red.opacity(0.8))
+                        .lineLimit(4)
+                }
 
                 Divider().background(Color.white.opacity(0.2))
 
@@ -363,75 +437,180 @@ struct DebugPanel: View {
     private func shaderGrid(_ presets: [(mode: Int, name: String, icon: String)]) -> some View {
         VStack(spacing: 4) {
             ForEach(presets, id: \.mode) { preset in
-                HStack(spacing: 6) {
-                    // Shader select button
-                    Button {
-                        state.shaderMode = preset.mode
-                    } label: {
-                        HStack(spacing: 6) {
-                            Text(preset.icon)
-                                .font(.system(size: 12))
-                            Text(preset.name)
-                                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                                .lineLimit(1)
+                VStack(spacing: 0) {
+                    HStack(spacing: 6) {
+                        // Expand/collapse chevron
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                expandedShader = expandedShader == preset.mode ? nil : preset.mode
+                            }
+                        } label: {
+                            Image(systemName: expandedShader == preset.mode ? "chevron.down" : "chevron.right")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(.white.opacity(0.3))
+                                .frame(width: 24, height: 28)
+                                .contentShape(Rectangle())
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(state.shaderMode == preset.mode
-                                    ? Color(nsColor: state.themeColor).opacity(0.25)
-                                    : Color.white.opacity(0.05))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .strokeBorder(
-                                    state.shaderMode == preset.mode
-                                        ? Color(nsColor: state.themeColor).opacity(0.6)
-                                        : Color.white.opacity(0.1),
-                                    lineWidth: 1
-                                )
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundColor(state.shaderMode == preset.mode ? .white : .white.opacity(0.6))
+                        .buttonStyle(.plain)
 
-                    // Rating buttons
-                    ratingButton(
-                        icon: "star.fill",
-                        isActive: state.starredShaders.contains(preset.mode),
-                        activeColor: .yellow
-                    ) {
-                        toggleRating(mode: preset.mode, tier: .star)
+                        // Shader select button
+                        Button {
+                            state.shaderMode = preset.mode
+                        } label: {
+                            HStack(spacing: 6) {
+                                Text(preset.icon)
+                                    .font(.system(size: 12))
+                                Text(preset.name)
+                                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                    .lineLimit(1)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(state.shaderMode == preset.mode
+                                        ? Color(nsColor: state.themeColor).opacity(0.25)
+                                        : Color.white.opacity(0.05))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .strokeBorder(
+                                        state.shaderMode == preset.mode
+                                            ? Color(nsColor: state.themeColor).opacity(0.6)
+                                            : Color.white.opacity(0.1),
+                                        lineWidth: 1
+                                    )
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundColor(state.shaderMode == preset.mode ? .white : .white.opacity(0.6))
+
+                        // Rating buttons
+                        ratingButton(
+                            icon: "star.fill",
+                            isActive: state.starredShaders.contains(preset.mode),
+                            activeColor: .yellow
+                        ) {
+                            toggleRating(mode: preset.mode, tier: .star)
+                        }
+
+                        ratingButton(
+                            icon: "hand.thumbsup.fill",
+                            isActive: state.likedShaders.contains(preset.mode),
+                            activeColor: .green
+                        ) {
+                            toggleRating(mode: preset.mode, tier: .like)
+                        }
+
+                        ratingButton(
+                            icon: "minus.circle.fill",
+                            isActive: state.midShaders.contains(preset.mode),
+                            activeColor: .orange
+                        ) {
+                            toggleRating(mode: preset.mode, tier: .mid)
+                        }
+
+                        ratingButton(
+                            icon: "hand.thumbsdown.fill",
+                            isActive: state.dislikedShaders.contains(preset.mode),
+                            activeColor: .red
+                        ) {
+                            toggleRating(mode: preset.mode, tier: .dislike)
+                        }
                     }
 
-                    ratingButton(
-                        icon: "hand.thumbsup.fill",
-                        isActive: state.likedShaders.contains(preset.mode),
-                        activeColor: .green
-                    ) {
-                        toggleRating(mode: preset.mode, tier: .like)
-                    }
-
-                    ratingButton(
-                        icon: "minus.circle.fill",
-                        isActive: state.midShaders.contains(preset.mode),
-                        activeColor: .orange
-                    ) {
-                        toggleRating(mode: preset.mode, tier: .mid)
-                    }
-
-                    ratingButton(
-                        icon: "hand.thumbsdown.fill",
-                        isActive: state.dislikedShaders.contains(preset.mode),
-                        activeColor: .red
-                    ) {
-                        toggleRating(mode: preset.mode, tier: .dislike)
+                    // Expandable tuning panel
+                    if expandedShader == preset.mode {
+                        shaderTuningPanel(mode: preset.mode)
                     }
                 }
             }
         }
+    }
+
+    private func shaderTuningPanel(mode: Int) -> some View {
+        let tuning = Binding<ShaderTuning>(
+            get: { state.shaderTunings[mode] ?? ShaderTuning() },
+            set: { state.shaderTunings[mode] = $0 }
+        )
+        return VStack(spacing: 6) {
+            // Speed slider
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    Text("Speed")
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.5))
+                    Spacer()
+                    Text(String(format: "%.1fx", tuning.wrappedValue.speedMultiplier))
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+                Slider(value: tuning.speedMultiplier, in: 0.1...5.0, step: 0.1)
+                    .tint(Color(nsColor: state.themeColor))
+            }
+
+            // Contrast slider
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    Text("Contrast")
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.5))
+                    Spacer()
+                    Text(String(format: "%.1f", tuning.wrappedValue.contrast))
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+                Slider(value: tuning.contrast, in: 0.0...3.0, step: 0.1)
+                    .tint(Color(nsColor: state.themeColor))
+            }
+
+            // Brightness slider
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    Text("Brightness")
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.5))
+                    Spacer()
+                    Text(String(format: "%.2f", tuning.wrappedValue.brightness))
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+                Slider(value: tuning.brightness, in: -0.5...1.0, step: 0.05)
+                    .tint(Color(nsColor: state.themeColor))
+            }
+
+            // Note field
+            HStack(spacing: 6) {
+                Text("Note")
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.5))
+                TextField("", text: tuning.note)
+                    .font(.system(size: 10, design: .monospaced))
+                    .textFieldStyle(.plain)
+                    .padding(4)
+                    .background(Color.white.opacity(0.05))
+                    .cornerRadius(4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
+                    )
+            }
+
+            // Reset button
+            HStack {
+                Spacer()
+                Button("Reset") {
+                    state.shaderTunings.removeValue(forKey: mode)
+                }
+                .buttonStyle(DebugButtonStyle(color: .yellow))
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 8)
+        .padding(.leading, 14) // Indent under chevron
+        .background(Color.white.opacity(0.03))
+        .cornerRadius(6)
     }
 
     private func ratingButton(icon: String, isActive: Bool, activeColor: Color, action: @escaping () -> Void) -> some View {
@@ -439,9 +618,10 @@ struct DebugPanel: View {
             Image(systemName: icon)
                 .font(.system(size: 11))
                 .foregroundColor(isActive ? activeColor : .white.opacity(0.2))
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .frame(width: 22, height: 22)
     }
 
     private enum RatingTier { case star, like, mid, dislike }
@@ -535,6 +715,17 @@ struct DebugPanel: View {
         }
     }
 
+    // MARK: - Hot Reload Status
+
+    private var hotReloadStatusColor: Color {
+        switch state.fileWatcher.status {
+        case .idle:     return .gray
+        case .building: return .yellow
+        case .ready:    return .green
+        case .error:    return .red
+        }
+    }
+
     // MARK: - Helpers
 
     private func fireTaskCompletion(_ tier: String) {
@@ -597,6 +788,135 @@ struct DebugPanel: View {
         }
     }
 
+    // MARK: - Preset Palette Grid
+
+    private var presetPaletteGrid: some View {
+        let palettes = state.themePalettes
+        let favKey = state.themeColorKey(state.themeColor)
+        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
+            ForEach(Array(palettes.enumerated()), id: \.offset) { index, palette in
+                Button {
+                    state.selectedPresetIndex = index
+                } label: {
+                    VStack(spacing: 3) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(palette.swiftUIGradient)
+                            .frame(height: 16)
+                            .overlay(alignment: .topTrailing) {
+                                let isFav = state.favoritePalettes[favKey] == index
+                                Image(systemName: isFav ? "star.fill" : "star")
+                                    .font(.system(size: 8))
+                                    .foregroundColor(isFav ? .yellow : .white.opacity(0.3))
+                                    .padding(2)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        if state.favoritePalettes[favKey] == index {
+                                            state.favoritePalettes.removeValue(forKey: favKey)
+                                        } else {
+                                            state.favoritePalettes[favKey] = index
+                                        }
+                                    }
+                            }
+                        Text(palette.name)
+                            .font(.system(size: 9, weight: .medium, design: .monospaced))
+                            .foregroundColor(.white.opacity(0.7))
+                            .lineLimit(1)
+                    }
+                    .padding(4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(state.selectedPresetIndex == index
+                                ? Color(nsColor: state.themeColor).opacity(0.2)
+                                : Color.white.opacity(0.05))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .strokeBorder(
+                                state.selectedPresetIndex == index
+                                    ? Color(nsColor: state.themeColor).opacity(0.6)
+                                    : Color.white.opacity(0.1),
+                                lineWidth: 1
+                            )
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    // MARK: - Custom Palette Editor
+
+    private var customPaletteEditor: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(Array(state.customPalette.stops.enumerated()), id: \.element.id) { index, stop in
+                HStack(spacing: 8) {
+                    Text("Stop \(index + 1)")
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.5))
+                        .frame(width: 50, alignment: .leading)
+
+                    ColorPicker("", selection: Binding(
+                        get: { Color(nsColor: state.customPalette.stops[index].color) },
+                        set: { state.customPalette.stops[index].color = NSColor($0) }
+                    ))
+                    .labelsHidden()
+                    .frame(width: 30)
+
+                    // Position slider
+                    if index > 0 && index < state.customPalette.stops.count - 1 {
+                        Slider(
+                            value: Binding(
+                                get: { Double(state.customPalette.stops[index].position) },
+                                set: { state.customPalette.stops[index].position = Float($0) }
+                            ),
+                            in: 0.01...0.99
+                        )
+                        .tint(Color(nsColor: state.themeColor))
+                    } else {
+                        Spacer()
+                    }
+
+                    // Remove button (only if > 2 stops)
+                    if state.customPalette.stops.count > 2 && index > 0 && index < state.customPalette.stops.count - 1 {
+                        Button {
+                            state.customPalette.stops.remove(at: index)
+                        } label: {
+                            Image(systemName: "minus.circle.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.red.opacity(0.6))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+
+            HStack(spacing: 8) {
+                // Add stop (max 8)
+                if state.customPalette.stops.count < 8 {
+                    Button {
+                        let newPos = Float(state.customPalette.stops.count - 1) / Float(state.customPalette.stops.count)
+                        let newStop = PaletteStop(
+                            color: NSColor(red: 0.5, green: 0.5, blue: 0.5, alpha: 1),
+                            position: newPos
+                        )
+                        state.customPalette.stops.insert(newStop, at: state.customPalette.stops.count - 1)
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: "plus.circle.fill")
+                            Text("Add Stop")
+                        }
+                    }
+                    .buttonStyle(DebugButtonStyle(color: .green))
+                }
+
+                Button("Reset") {
+                    state.customPalette = makeDefaultCustomPalette()
+                }
+                .buttonStyle(DebugButtonStyle(color: .yellow))
+            }
+        }
+    }
+
     // MARK: - Pixel Presets
 
     private let pixelPresets: [(label: String, size: Double)] = [
@@ -614,70 +934,6 @@ struct DebugPanel: View {
         ("3",    3),
         ("5",    5),
         ("8",    8),
-    ]
-
-    // MARK: - Shader Presets
-
-    private let shaderPresets: [(mode: Int, name: String, icon: String)] = [
-        (0,  "Organic Flow",        "~"),
-        (1,  "Mandala",             "*"),
-        (2,  "Point Cloud",         "."),
-        (3,  "Aurora",              "/"),
-        (4,  "Pulse Grid",          "#"),
-        (5,  "Combined",            "+"),
-        (6,  "Light Grid",          "::"),
-        (7,  "Sinebow",             "S"),
-        (8,  "Gradient Spin",       "@"),
-        (9,  "Circle Wave",         "O"),
-        (10, "Kaleidoscope",        "K"),
-        (11, "Plasma",              "P"),
-        (12, "Voronoi",             "V"),
-        (13, "Spiral Galaxy",       "G"),
-        (14, "Ripple Pond",         "R"),
-        (15, "Lava Lamp",           "L"),
-        (16, "Sacred Geometry",     "F"),
-        (17, "Warp Tunnel",         "T"),
-        (18, "Fractal Rings",       "Q"),
-        (19, "Moire",               "M"),
-        (20, "Chrysanthemum",       "❁"),
-        (21, "Machine Elves",       "⌬"),
-        (22, "Hyperspace",          "◈"),
-        (23, "Jewel Lattice",       "◇"),
-        (24, "Neural Bloom",        "⟡"),
-        (25, "Ego Dissolution",     "∞"),
-        (26, "Folding Dimensions",  "⊿"),
-        (27, "Cymatics",            "≋"),
-        (28, "Cosmic Web",          "⟐"),
-        (29, "Topographic Flow",    "≈"),
-        (30, "Interference Crystal","✧"),
-        (31, "Nebula Cloud",        "☁"),
-        (32, "DNA Helix",           "⧖"),
-        (33, "Tessellation Dance",  "◬"),
-        (34, "Entity Presence",     "◉"),
-        (35, "Fractal Mandelbrot",  "⍟"),
-        (36, "Quantum Field",       "⟁"),
-        (37, "Geometric Alchemy",   "⬡"),
-        (38, "Wormhole",            "⊘"),
-        (39, "Celestial Clockwork", "⚙"),
-        (40, "Crystal Cavern",      "⬥"),
-        (41, "Electric Field",      "⚡"),
-        (42, "Resonance",           "∿"),
-        (43, "Spirit Molecule",     "⊛"),
-        (44, "Flower of Life",      "✿"),
-        (45, "Infinite Zoom",       "⌁"),
-        (46, "String Theory",       "∥"),
-        (47, "Penrose Tiling",      "◇"),
-        (48, "Akashic Field",       "∞"),
-        (49, "Breath of God",       "☼"),
-        (50, "Metatron's Cube",     "✡"),
-        (51, "Void Bloom",          "❀"),
-        (52, "Weaver's Loom",       "⌘"),
-        (53, "Timecrystal",         "⏣"),
-        (54, "Resonance Chamber",   "⊛"),
-        (55, "Event Horizon",       "◌"),
-        (56, "Architect's Gaze",    "◎"),
-        (57, "Sigil Network",       "⎔"),
-        (58, "Dream Catcher",       "◐"),
     ]
 
     // MARK: - Color Presets
@@ -719,3 +975,67 @@ struct DebugButtonStyle: ButtonStyle {
             )
     }
 }
+
+// MARK: - Shader Presets (module scope for cross-file access)
+
+let shaderPresets: [(mode: Int, name: String, icon: String)] = [
+    (0,  "Organic Flow",        "~"),
+    (1,  "Mandala",             "*"),
+    (2,  "Point Cloud",         "."),
+    (3,  "Aurora",              "/"),
+    (4,  "Pulse Grid",          "#"),
+    (5,  "Combined",            "+"),
+    (6,  "Light Grid",          "::"),
+    (7,  "Sinebow",             "S"),
+    (8,  "Gradient Spin",       "@"),
+    (9,  "Circle Wave",         "O"),
+    (10, "Kaleidoscope",        "K"),
+    (11, "Plasma",              "P"),
+    (12, "Voronoi",             "V"),
+    (13, "Spiral Galaxy",       "G"),
+    (14, "Ripple Pond",         "R"),
+    (15, "Lava Lamp",           "L"),
+    (16, "Sacred Geometry",     "F"),
+    (17, "Warp Tunnel",         "T"),
+    (18, "Fractal Rings",       "Q"),
+    (19, "Moire",               "M"),
+    (20, "Chrysanthemum",       "❁"),
+    (21, "Machine Elves",       "⌬"),
+    (22, "Hyperspace",          "◈"),
+    (23, "Jewel Lattice",       "◇"),
+    (24, "Neural Bloom",        "⟡"),
+    (25, "Ego Dissolution",     "∞"),
+    (26, "Folding Dimensions",  "⊿"),
+    (27, "Cymatics",            "≋"),
+    (28, "Cosmic Web",          "⟐"),
+    (29, "Topographic Flow",    "≈"),
+    (30, "Interference Crystal","✧"),
+    (31, "Nebula Cloud",        "☁"),
+    (32, "DNA Helix",           "⧖"),
+    (33, "Tessellation Dance",  "◬"),
+    (34, "Entity Presence",     "◉"),
+    (35, "Fractal Mandelbrot",  "⍟"),
+    (36, "Quantum Field",       "⟁"),
+    (37, "Geometric Alchemy",   "⬡"),
+    (38, "Wormhole",            "⊘"),
+    (39, "Celestial Clockwork", "⚙"),
+    (40, "Crystal Cavern",      "⬥"),
+    (41, "Electric Field",      "⚡"),
+    (42, "Resonance",           "∿"),
+    (43, "Spirit Molecule",     "⊛"),
+    (44, "Flower of Life",      "✿"),
+    (45, "Infinite Zoom",       "⌁"),
+    (46, "String Theory",       "∥"),
+    (47, "Penrose Tiling",      "◇"),
+    (48, "Akashic Field",       "∞"),
+    (49, "Breath of God",       "☼"),
+    (50, "Metatron's Cube",     "✡"),
+    (51, "Void Bloom",          "❀"),
+    (52, "Weaver's Loom",       "⌘"),
+    (53, "Timecrystal",         "⏣"),
+    (54, "Resonance Chamber",   "⊛"),
+    (55, "Event Horizon",       "◌"),
+    (56, "Architect's Gaze",    "◎"),
+    (57, "Sigil Network",       "⎔"),
+    (58, "Dream Catcher",       "◐"),
+]

@@ -1,5 +1,23 @@
 import SwiftUI
 
+struct ShaderTuning: Codable, Equatable {
+    var speedMultiplier: Double = 1.0  // 0.1–5.0
+    var contrast: Double = 1.0         // 0.0–3.0
+    var brightness: Double = 0.0       // -0.5–1.0, lifts midtones/highlights while preserving blacks
+    var note: String = ""
+
+    // Backwards-compatible decoder: new fields get defaults if missing from saved data
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        speedMultiplier = try c.decodeIfPresent(Double.self, forKey: .speedMultiplier) ?? 1.0
+        contrast = try c.decodeIfPresent(Double.self, forKey: .contrast) ?? 1.0
+        brightness = try c.decodeIfPresent(Double.self, forKey: .brightness) ?? 0.0
+        note = try c.decodeIfPresent(String.self, forKey: .note) ?? ""
+    }
+
+    init() {}
+}
+
 @main
 struct ShaderLabApp: App {
     @StateObject private var state = TerminalState()
@@ -17,7 +35,7 @@ struct ShaderLabApp: App {
 /// Shared observable state that mimics what SurfaceView provides in fadicode.
 class TerminalState: ObservableObject {
     // Working state (OSC 7778)
-    @Published var isWorkingStateActive: Bool = false
+    @Published var isWorkingStateActive: Bool = true
 
     // Task completion (OSC 7777)
     @Published var taskCompletionTier: String? = nil
@@ -26,30 +44,93 @@ class TerminalState: ObservableObject {
     @Published var isFocused: Bool = true
 
     // Theme color
-    @Published var themeColor: NSColor = NSColor(red: 0.3, green: 0.6, blue: 1.0, alpha: 1.0)
+    @Published var themeColor: NSColor = NSColor(red: 0.3, green: 0.6, blue: 1.0, alpha: 1.0) {
+        didSet {
+            guard !isLoading else { return }
+            let key = themeColorKey(themeColor)
+            if let favIdx = favoritePalettes[key] {
+                selectedPresetIndex = favIdx
+                paletteMode = .preset
+            }
+        }
+    }
 
     // Shader tuning
-    @Published var shaderMode: Int = 5 // 0-58, default Combined
+    @Published var shaderMode: Int = 12 // 0-58, default Voronoi
     @Published var shaderSpeed: Double = 1.0
     @Published var transitionDuration: Double = 3.0 // seconds for shader-to-shader dissolve
     @Published var maxIntensity: Double = 1.0
     @Published var focusedIntensity: Double = 0.08
+    @Published var focusedOpacity: Double = 0.50 // overall opacity of shader overlay when terminal is focused
     @Published var focusInDuration: Double = 0.2
     @Published var focusOutDuration: Double = 0.5
 
     // Pixelation
-    @Published var pixelSize: Double = 0.0 // 0 = off, otherwise block size in points
-    @Published var gridOpacity: Double = 0.6
+    @Published var pixelSize: Double = 6.0 // 0 = off, otherwise block size in points
+    @Published var gridOpacity: Double = 1.0           // unfocused grid line thickness
+    @Published var focusedGridOpacity: Double = 2.5    // focused grid line thickness
+    @Published var resolutionScale: Double = 0.1       // 0.1–1.0, render shader at lower res then upscale
 
     // Posterization
-    @Published var posterizeLevels: Double = 5.0 // 0 = off (plain tint), 2+ = posterize bands
-    @Published var hueSpread: Double = 0.10      // analogous hue spread (0 = mono, 0.25 = wide)
-    @Published var complementMix: Double = 0.0   // complementary accent in highlights (0 = off)
+    @Published var posterizeLevels: Double = 7.0 // 0 = off (plain tint), 2+ = posterize bands
+    @Published var hueSpread: Double = 0.20      // warm-cool hue shift (0 = mono, 0.5 = wide)
+    @Published var complementMix: Double = 0.10  // complementary accent in highlights (0 = off)
+    @Published var paletteContrast: Double = 0.87 // power curve on brightness ramp (0.5 = flat, 2.0 = dramatic)
+    @Published var paletteSaturation: Double = 1.21 // saturation multiplier (0 = grayscale, 2 = vivid)
+
+    // Loading guard (prevents saving during init)
+    private var isLoading = false
+
+    // Per-shader tuning (speed multiplier, contrast, notes)
+    @Published var shaderTunings: [Int: ShaderTuning] = [:] {
+        didSet { if !isLoading { saveTunings() } }
+    }
+
+    // Palette system
+    @Published var paletteMode: PaletteMode = .auto
+    @Published var selectedPresetIndex: Int = 0
+    @Published var customPalette: GradientPalette = makeDefaultCustomPalette()
+
+    // Favorite palette per theme color
+    @Published var favoritePalettes: [String: Int] = [:] {
+        didSet {
+            guard !isLoading else { return }
+            if let data = try? JSONEncoder().encode(favoritePalettes) {
+                UserDefaults.standard.set(data, forKey: "favoritePalettes")
+            }
+        }
+    }
+
+    var themePalettes: [GradientPalette] {
+        generateThemePalettes(themeColor: themeColor)
+    }
+
+    var resolvedPalette: GradientPalette {
+        switch paletteMode {
+        case .auto:
+            return generateAutoPalette(
+                themeColor: themeColor,
+                hueSpread: Float(hueSpread),
+                complementMix: Float(complementMix),
+                contrast: Float(paletteContrast),
+                saturation: Float(paletteSaturation),
+                maxBrightness: isFocused ? 0.55 : 1.0,
+                levels: isFocused ? max(Int(posterizeLevels) - 2, 3) : max(Int(posterizeLevels), 3)
+            )
+        case .preset:
+            let palettes = themePalettes
+            let idx = min(selectedPresetIndex, palettes.count - 1)
+            return palettes[max(idx, 0)]
+        case .custom:
+            return customPalette
+        }
+    }
+
+    var paletteFloats: [Float] { resolvedPalette.toFloatArray() }
+    var paletteStopCount: Int { resolvedPalette.stops.count }
 
     // Shader ratings: star = best, liked = good, mid = okay, disliked = nope
     // Persisted to UserDefaults
-    private var isLoading = false
-
     @Published var starredShaders: Set<Int> = [] {
         didSet { if !isLoading { saveRatings() } }
     }
@@ -68,6 +149,18 @@ class TerminalState: ObservableObject {
         didSet {
             // Reset params to defaults when shader changes
             resetInfernoParams()
+        }
+    }
+
+    // Hot reload
+    let fileWatcher = ShaderFileWatcher()
+    @Published var hotReloadEnabled: Bool = false {
+        didSet {
+            if hotReloadEnabled {
+                fileWatcher.start()
+            } else {
+                fileWatcher.stop()
+            }
         }
     }
 
@@ -120,7 +213,44 @@ class TerminalState: ObservableObject {
             // Persist so next launch loads from UserDefaults
             saveRatings()
         }
+        // Load per-shader tunings from JSON file (fall back to UserDefaults for migration)
+        if let data = try? Data(contentsOf: Self.tuningsFileURL),
+           let decoded = try? JSONDecoder().decode([Int: ShaderTuning].self, from: data) {
+            shaderTunings = decoded
+        } else if let data = UserDefaults.standard.data(forKey: "shaderTunings"),
+                  let decoded = try? JSONDecoder().decode([Int: ShaderTuning].self, from: data) {
+            shaderTunings = decoded
+            saveTunings() // migrate to file
+        }
+        // Load favorite palettes
+        if let data = UserDefaults.standard.data(forKey: "favoritePalettes"),
+           let decoded = try? JSONDecoder().decode([String: Int].self, from: data) {
+            favoritePalettes = decoded
+        }
         isLoading = false
+    }
+
+    func themeColorKey(_ color: NSColor) -> String {
+        let c = color.usingColorSpace(.sRGB) ?? color
+        let r = Int(c.redComponent * 255)
+        let g = Int(c.greenComponent * 255)
+        let b = Int(c.blueComponent * 255)
+        return String(format: "%02X%02X%02X", r, g, b)
+    }
+
+    // Tunings file lives next to the project so it's visible, version-controllable, and won't vanish
+    private static let tuningsFileURL: URL = {
+        // Save alongside the app bundle's parent directory (the project root)
+        let projectDir = URL(fileURLWithPath: "/Users/adamghaleb/Documents/windsurf projects/fadicode-shader-lab")
+        return projectDir.appendingPathComponent("shader-tunings.json")
+    }()
+
+    private func saveTunings() {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        if let data = try? encoder.encode(shaderTunings) {
+            try? data.write(to: Self.tuningsFileURL, options: .atomic)
+        }
     }
 
     private func saveRatings() {
@@ -146,8 +276,7 @@ struct ContentView: View {
         HSplitView {
             // Left: Mock terminal with overlays
             ZStack {
-                MockTerminalView()
-
+                // Shader renders behind terminal text
                 WorkingStateOverlay(
                     isActive: state.isWorkingStateActive,
                     isFocused: state.isFocused,
@@ -156,15 +285,24 @@ struct ContentView: View {
                     speed: state.shaderSpeed,
                     maxIntensity: state.maxIntensity,
                     focusedIntensity: state.focusedIntensity,
+                    focusedOpacity: state.focusedOpacity,
                     focusInDuration: state.focusInDuration,
                     focusOutDuration: state.focusOutDuration,
                     pixelSize: state.pixelSize,
                     gridOpacity: state.gridOpacity,
+                    focusedGridOpacity: state.focusedGridOpacity,
+                    resolutionScale: state.resolutionScale,
                     posterizeLevels: state.posterizeLevels,
                     hueSpread: state.hueSpread,
                     complementMix: state.complementMix,
-                    transitionDuration: state.transitionDuration
+                    transitionDuration: state.transitionDuration,
+                    paletteFloats: state.paletteFloats,
+                    paletteCount: state.paletteStopCount,
+                    shaderTunings: state.shaderTunings
                 )
+
+                // Terminal text renders on top of shader
+                MockTerminalView()
 
                 TaskFlashOverlay(
                     tier: state.taskCompletionTier,
@@ -184,8 +322,9 @@ struct ContentView: View {
             }
             .frame(minWidth: 500)
             .background(Color.black)
+            .contentShape(Rectangle())
             .onTapGesture {
-                state.isFocused = true
+                state.isFocused.toggle()
             }
 
             // Right: Debug panel
