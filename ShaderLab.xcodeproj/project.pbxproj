@@ -9,20 +9,64 @@
 /* Begin PBXBuildFile section */
 		A10001 /* ShaderLabApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20001; };
 		A10002 /* MockTerminalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20002; };
-		A10003 /* WorkingStateShader.metal in Sources */ = {isa = PBXBuildFile; fileRef = A20003; };
 		A10004 /* DebugPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20004; };
 		A10005 /* WorkingStateOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20005; };
 		A10006 /* TaskFlashOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20006; };
+		A10007 /* InfernoShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = A20007; };
+		A10008 /* InfernoPreviewOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20008; };
+		B10001 /* ModeOrganicFlow.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20001; };
+		B10002 /* ModeMandala.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20002; };
+		B10003 /* ModePointCloud.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20003; };
+		B10004 /* ModeAurora.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20004; };
+		B10005 /* ModePulseGrid.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20005; };
+		B10006 /* ModeCombined.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20006; };
+		B10007 /* ModeLightGrid.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20007; };
+		B10008 /* ModeSinebow.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20008; };
+		B10009 /* ModeGradientSpin.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20009; };
+		B10010 /* ModeCircleWave.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20010; };
+		B10011 /* ModeKaleidoscope.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20011; };
+		B10012 /* ModePlasma.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20012; };
+		B10013 /* ModeVoronoi.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20013; };
+		B10014 /* ModeSpiralGalaxy.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20014; };
+		B10015 /* ModeRipplePond.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20015; };
+		B10016 /* ModeLavaLamp.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20016; };
+		B10017 /* ModeSacredGeometry.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20017; };
+		B10018 /* ModeWarpTunnel.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20018; };
+		B10019 /* ModeFractalRings.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20019; };
+		B10020 /* ModeMoire.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20020; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		A20001 /* ShaderLabApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShaderLabApp.swift; sourceTree = "<group>"; };
 		A20002 /* MockTerminalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockTerminalView.swift; sourceTree = "<group>"; };
-		A20003 /* WorkingStateShader.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = WorkingStateShader.metal; sourceTree = "<group>"; };
 		A20004 /* DebugPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugPanel.swift; sourceTree = "<group>"; };
 		A20005 /* WorkingStateOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkingStateOverlay.swift; sourceTree = "<group>"; };
 		A20006 /* TaskFlashOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskFlashOverlay.swift; sourceTree = "<group>"; };
+		A20007 /* InfernoShaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = InfernoShaders.metal; sourceTree = "<group>"; };
+		A20008 /* InfernoPreviewOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfernoPreviewOverlay.swift; sourceTree = "<group>"; };
 		A30001 /* ShaderLab.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ShaderLab.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B20001 /* ModeOrganicFlow.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeOrganicFlow.metal; sourceTree = "<group>"; };
+		B20002 /* ModeMandala.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeMandala.metal; sourceTree = "<group>"; };
+		B20003 /* ModePointCloud.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModePointCloud.metal; sourceTree = "<group>"; };
+		B20004 /* ModeAurora.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeAurora.metal; sourceTree = "<group>"; };
+		B20005 /* ModePulseGrid.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModePulseGrid.metal; sourceTree = "<group>"; };
+		B20006 /* ModeCombined.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeCombined.metal; sourceTree = "<group>"; };
+		B20007 /* ModeLightGrid.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeLightGrid.metal; sourceTree = "<group>"; };
+		B20008 /* ModeSinebow.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeSinebow.metal; sourceTree = "<group>"; };
+		B20009 /* ModeGradientSpin.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeGradientSpin.metal; sourceTree = "<group>"; };
+		B20010 /* ModeCircleWave.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeCircleWave.metal; sourceTree = "<group>"; };
+		B20011 /* ModeKaleidoscope.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeKaleidoscope.metal; sourceTree = "<group>"; };
+		B20012 /* ModePlasma.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModePlasma.metal; sourceTree = "<group>"; };
+		B20013 /* ModeVoronoi.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeVoronoi.metal; sourceTree = "<group>"; };
+		B20014 /* ModeSpiralGalaxy.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeSpiralGalaxy.metal; sourceTree = "<group>"; };
+		B20015 /* ModeRipplePond.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeRipplePond.metal; sourceTree = "<group>"; };
+		B20016 /* ModeLavaLamp.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeLavaLamp.metal; sourceTree = "<group>"; };
+		B20017 /* ModeSacredGeometry.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeSacredGeometry.metal; sourceTree = "<group>"; };
+		B20018 /* ModeWarpTunnel.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeWarpTunnel.metal; sourceTree = "<group>"; };
+		B20019 /* ModeFractalRings.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeFractalRings.metal; sourceTree = "<group>"; };
+		B20020 /* ModeMoire.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ModeMoire.metal; sourceTree = "<group>"; };
+		B30001 /* ShaderUtils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ShaderUtils.h; sourceTree = "<group>"; };
+		B30002 /* WorkingStatePipeline.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WorkingStatePipeline.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,7 +96,30 @@
 				A20005 /* WorkingStateOverlay.swift */,
 				A20006 /* TaskFlashOverlay.swift */,
 				A20004 /* DebugPanel.swift */,
-				A20003 /* WorkingStateShader.metal */,
+				A20008 /* InfernoPreviewOverlay.swift */,
+				A20007 /* InfernoShaders.metal */,
+				B30001 /* ShaderUtils.h */,
+				B30002 /* WorkingStatePipeline.h */,
+				B20001 /* ModeOrganicFlow.metal */,
+				B20002 /* ModeMandala.metal */,
+				B20003 /* ModePointCloud.metal */,
+				B20004 /* ModeAurora.metal */,
+				B20005 /* ModePulseGrid.metal */,
+				B20006 /* ModeCombined.metal */,
+				B20007 /* ModeLightGrid.metal */,
+				B20008 /* ModeSinebow.metal */,
+				B20009 /* ModeGradientSpin.metal */,
+				B20010 /* ModeCircleWave.metal */,
+				B20011 /* ModeKaleidoscope.metal */,
+				B20012 /* ModePlasma.metal */,
+				B20013 /* ModeVoronoi.metal */,
+				B20014 /* ModeSpiralGalaxy.metal */,
+				B20015 /* ModeRipplePond.metal */,
+				B20016 /* ModeLavaLamp.metal */,
+				B20017 /* ModeSacredGeometry.metal */,
+				B20018 /* ModeWarpTunnel.metal */,
+				B20019 /* ModeFractalRings.metal */,
+				B20020 /* ModeMoire.metal */,
 			);
 			path = ShaderLab;
 			sourceTree = "<group>";
@@ -119,10 +186,31 @@
 			files = (
 				A10001 /* ShaderLabApp.swift in Sources */,
 				A10002 /* MockTerminalView.swift in Sources */,
-				A10003 /* WorkingStateShader.metal in Sources */,
 				A10004 /* DebugPanel.swift in Sources */,
 				A10005 /* WorkingStateOverlay.swift in Sources */,
 				A10006 /* TaskFlashOverlay.swift in Sources */,
+				A10007 /* InfernoShaders.metal in Sources */,
+				A10008 /* InfernoPreviewOverlay.swift in Sources */,
+				B10001 /* ModeOrganicFlow.metal in Sources */,
+				B10002 /* ModeMandala.metal in Sources */,
+				B10003 /* ModePointCloud.metal in Sources */,
+				B10004 /* ModeAurora.metal in Sources */,
+				B10005 /* ModePulseGrid.metal in Sources */,
+				B10006 /* ModeCombined.metal in Sources */,
+				B10007 /* ModeLightGrid.metal in Sources */,
+				B10008 /* ModeSinebow.metal in Sources */,
+				B10009 /* ModeGradientSpin.metal in Sources */,
+				B10010 /* ModeCircleWave.metal in Sources */,
+				B10011 /* ModeKaleidoscope.metal in Sources */,
+				B10012 /* ModePlasma.metal in Sources */,
+				B10013 /* ModeVoronoi.metal in Sources */,
+				B10014 /* ModeSpiralGalaxy.metal in Sources */,
+				B10015 /* ModeRipplePond.metal in Sources */,
+				B10016 /* ModeLavaLamp.metal in Sources */,
+				B10017 /* ModeSacredGeometry.metal in Sources */,
+				B10018 /* ModeWarpTunnel.metal in Sources */,
+				B10019 /* ModeFractalRings.metal in Sources */,
+				B10020 /* ModeMoire.metal in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -148,6 +236,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
+				MTL_HEADER_SEARCH_PATHS = "$(SRCROOT)/ShaderLab";
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -168,6 +257,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				MTL_HEADER_SEARCH_PATHS = "$(SRCROOT)/ShaderLab";
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";

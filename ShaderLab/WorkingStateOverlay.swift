@@ -88,15 +88,41 @@ struct WorkingStateOverlay: View {
         }
     }
 
+    // Maps mode index to the stitchable shader function name in each .metal file
+    private static let shaderNames: [Int: String] = [
+        0:  "organicFlowEffect",
+        1:  "mandalaEffect",
+        2:  "pointCloudEffect",
+        3:  "auroraEffect",
+        4:  "pulseGridEffect",
+        5:  "combinedEffect",
+        6:  "lightGridEffect",
+        7:  "sinebowEffect",
+        8:  "gradientSpinEffect",
+        9:  "circleWaveEffect",
+        10: "kaleidoscopeEffect",
+        11: "plasmaEffect",
+        12: "voronoiEffect",
+        13: "spiralGalaxyEffect",
+        14: "ripplePondEffect",
+        15: "lavaLampEffect",
+        16: "sacredGeometryEffect",
+        17: "warpTunnelEffect",
+        18: "fractalRingsEffect",
+        19: "moireEffect",
+    ]
+
     @ViewBuilder
     private var shaderView: some View {
         TimelineView(.animation) { timeline in
             let elapsed = timeline.date.timeIntervalSince(startDate) * speed
             GeometryReader { geo in
+                let funcName = Self.shaderNames[mode] ?? "combinedEffect"
+                let fn = ShaderLibrary[dynamicMember: funcName]
                 Rectangle()
                     .fill(Color.white)
                     .colorEffect(
-                        ShaderLibrary.workingStateEffect(
+                        fn(
                             .float(Float(elapsed)),
                             .float(Float(intensity)),
                             .float(Float(themeRGB.r)),
@@ -104,14 +130,11 @@ struct WorkingStateOverlay: View {
                             .float(Float(themeRGB.b)),
                             .float(Float(geo.size.width)),
                             .float(Float(geo.size.height)),
-                            .float(Float(mode)),
                             .float(Float(pixelSize)),
                             .float(Float(gridOpacity)),
                             .float(Float(posterizeLevels))
                         )
                     )
-                    // drawingGroup forces an offscreen Metal render pass,
-                    // which respects the shader's alpha output for transparency
                     .drawingGroup()
             }
         }

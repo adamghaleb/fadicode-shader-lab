@@ -96,8 +96,40 @@ struct DebugPanel: View {
 
                 Divider().background(Color.white.opacity(0.2))
 
+                // MARK: - Inferno Shader Preview
+                sectionHeader("Inferno Shaders")
+
+                Picker("Effect", selection: $state.infernoShader) {
+                    ForEach(InfernoShader.allCases) { shader in
+                        Text(shader.rawValue).tag(shader)
+                    }
+                }
+                .pickerStyle(.menu)
+                .font(.system(size: 12, design: .monospaced))
+                .tint(Color(nsColor: state.themeColor))
+
+                if state.infernoShader != .none {
+                    HStack {
+                        statusPill(state.infernoShader.shaderType.label, color: state.infernoShader.shaderType.tint)
+                        Spacer()
+                        Button("Reset") {
+                            state.resetInfernoParams()
+                        }
+                        .buttonStyle(DebugButtonStyle(color: .yellow))
+                        Button("Clear") {
+                            state.infernoShader = .none
+                        }
+                        .buttonStyle(DebugButtonStyle(color: .red))
+                    }
+
+                    // Dynamic per-shader parameter sliders
+                    infernoParamSliders
+                }
+
+                Divider().background(Color.white.opacity(0.2))
+
                 // MARK: - Shader Preset
-                sectionHeader("Shader Preset")
+                sectionHeader("Working State Preset")
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 6) {
                     ForEach(shaderPresets, id: \.mode) { preset in
@@ -182,7 +214,7 @@ struct DebugPanel: View {
                 // MARK: - Shader Tuning
                 sectionHeader("Shader Tuning")
 
-                sliderRow("Speed", value: $state.shaderSpeed, range: 0.1...3.0)
+                sliderRow("Speed", value: $state.shaderSpeed, range: 0.1...30.0)
                 sliderRow("Unfocused Intensity", value: $state.maxIntensity, range: 0.0...1.5)
                 sliderRow("Focused Intensity", value: $state.focusedIntensity, range: 0.0...0.5)
                 sliderRow("Focus-in (ms)", value: $state.focusInDuration, range: 0.05...1.0)
@@ -212,6 +244,32 @@ struct DebugPanel: View {
             .padding(16)
         }
         .background(Color(white: 0.1))
+    }
+
+    // MARK: - Inferno Parameter Sliders
+
+    @ViewBuilder
+    private var infernoParamSliders: some View {
+        let defs = state.infernoShader.parameterDefs
+        if defs.isEmpty {
+            Text("No tunable parameters")
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundColor(.white.opacity(0.3))
+                .italic()
+        } else {
+            if defs.count > 0 {
+                sliderRow(defs[0].name, value: $state.infernoParam1, range: defs[0].range)
+            }
+            if defs.count > 1 {
+                sliderRow(defs[1].name, value: $state.infernoParam2, range: defs[1].range)
+            }
+            if defs.count > 2 {
+                sliderRow(defs[2].name, value: $state.infernoParam3, range: defs[2].range)
+            }
+            if defs.count > 3 {
+                sliderRow(defs[3].name, value: $state.infernoParam4, range: defs[3].range)
+            }
+        }
     }
 
     // MARK: - Helpers
@@ -297,12 +355,26 @@ struct DebugPanel: View {
     // MARK: - Shader Presets
 
     private let shaderPresets: [(mode: Int, name: String, icon: String)] = [
-        (0, "Organic Flow", "~"),
-        (1, "Mandala",      "*"),
-        (2, "Point Cloud",  "."),
-        (3, "Aurora",       "/"),
-        (4, "Pulse Grid",   "#"),
-        (5, "Combined",     "+"),
+        (0,  "Organic Flow",    "~"),
+        (1,  "Mandala",         "*"),
+        (2,  "Point Cloud",     "."),
+        (3,  "Aurora",          "/"),
+        (4,  "Pulse Grid",      "#"),
+        (5,  "Combined",        "+"),
+        (6,  "Light Grid",      "::"),
+        (7,  "Sinebow",         "S"),
+        (8,  "Gradient Spin",   "@"),
+        (9,  "Circle Wave",     "O"),
+        (10, "Kaleidoscope",    "K"),
+        (11, "Plasma",          "P"),
+        (12, "Voronoi",         "V"),
+        (13, "Spiral Galaxy",   "G"),
+        (14, "Ripple Pond",     "R"),
+        (15, "Lava Lamp",       "L"),
+        (16, "Sacred Geometry", "F"),
+        (17, "Warp Tunnel",     "T"),
+        (18, "Fractal Rings",   "Q"),
+        (19, "Moire",           "M"),
     ]
 
     // MARK: - Color Presets
