@@ -18,6 +18,7 @@ struct WorkingStateOverlay: View {
 
     @State private var intensity: Double = 0.0
     @State private var isVisible: Bool = false
+    @State private var startDate: Date = .now
 
     private var themeRGB: (r: Double, g: Double, b: Double) {
         guard let tc = themeColor else { return (0.3, 0.6, 1.0) }
@@ -46,6 +47,7 @@ struct WorkingStateOverlay: View {
         .allowsHitTesting(false)
         .onChange(of: isActive) { active in
             if active {
+                startDate = .now
                 isVisible = true
                 let target = isFocused ? focusedIntensity : maxIntensity
                 withAnimation(.easeIn(duration: 0.4)) {
@@ -86,7 +88,7 @@ struct WorkingStateOverlay: View {
     @ViewBuilder
     private var shaderView: some View {
         TimelineView(.animation) { timeline in
-            let elapsed = timeline.date.timeIntervalSinceReferenceDate * speed
+            let elapsed = timeline.date.timeIntervalSince(startDate) * speed
             GeometryReader { geo in
                 Rectangle()
                     .fill(Color.white)
