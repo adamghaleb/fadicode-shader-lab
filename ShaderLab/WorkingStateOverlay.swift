@@ -87,8 +87,6 @@ struct WorkingStateOverlay: View {
         TimelineView(.animation) { timeline in
             let elapsed = timeline.date.timeIntervalSinceReferenceDate * speed
             GeometryReader { geo in
-                // White base gives the shader opaque pixels to transform.
-                // The shader returns its own alpha for transparency.
                 Rectangle()
                     .fill(Color.white)
                     .colorEffect(
@@ -102,6 +100,9 @@ struct WorkingStateOverlay: View {
                             .float(Float(geo.size.height))
                         )
                     )
+                    // drawingGroup forces an offscreen Metal render pass,
+                    // which respects the shader's alpha output for transparency
+                    .drawingGroup()
             }
         }
     }
