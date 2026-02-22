@@ -218,6 +218,33 @@ struct WorkingStateOverlay: View {
             )
     }
 
+    // Blurred raw grayscale layer (before post-process), ready for compositing.
+    private func blurredRawLayer(modeIndex: Int, elapsed: Double, size: CGSize) -> some View {
+        let blurR = pixelSize > 1 ? pixelSize * 0.4 : 0.0
+        return rawShaderLayer(modeIndex: modeIndex, elapsed: elapsed, size: size)
+            .blur(radius: blurR)
+            .drawingGroup()
+    }
+
+    // Apply post-process (theme + posterize + pixelate + grid) to any view.
+    private func postProcess<V: View>(_ view: V) -> some View {
+        let maxOff = CGSize(width: max(pixelSize, 1), height: max(pixelSize, 1))
+        return view
+            .layerEffect(
+                ShaderLibrary.posterizePixelateEffect(
+                    .float(Float(pixelSize)),
+                    .float(Float(gridOpacity)),
+                    .float(Float(posterizeLevels)),
+                    .float(Float(themeRGB.r)),
+                    .float(Float(themeRGB.g)),
+                    .float(Float(themeRGB.b)),
+                    .float(Float(hueSpread)),
+                    .float(Float(complementMix))
+                ),
+                maxSampleOffset: maxOff
+            )
+    }
+
     @ViewBuilder
     private var shaderView: some View {
         TimelineView(.animation) { timeline in
@@ -242,25 +269,29 @@ struct WorkingStateOverlay: View {
                         }
                     }()
 
-                    ZStack {
-                        // Old shader: luma fade-out (bright parts vanish first)
-                        processedShaderLayer(modeIndex: prevMode, elapsed: elapsed, size: size)
-                            .colorEffect(
-                                ShaderLibrary.lumaFadeOutEffect(
-                                    .float(Float(progress))
+                    // Blend raw grayscale layers BEFORE post-process:
+                    // Old shader: holds full, then gentle luma fade-out.
+                    // New shader: ease-in envelope + luma cascade reveal.
+                    // Single post-process pass themes the blended result.
+                    postProcess(
+                        ZStack {
+                            blurredRawLayer(modeIndex: prevMode, elapsed: elapsed, size: size)
+                                .colorEffect(
+                                    ShaderLibrary.lumaDissolveOut(
+                                        .float(Float(progress))
+                                    )
                                 )
-                            )
-                            .drawingGroup()
 
-                        // New shader: luma fade-in (bright parts appear first)
-                        processedShaderLayer(modeIndex: mode, elapsed: elapsed, size: size)
-                            .colorEffect(
-                                ShaderLibrary.lumaFadeInEffect(
-                                    .float(Float(progress))
+                            blurredRawLayer(modeIndex: mode, elapsed: elapsed, size: size)
+                                .colorEffect(
+                                    ShaderLibrary.lumaRevealEffect(
+                                        .float(Float(progress))
+                                    )
                                 )
-                            )
-                            .drawingGroup()
-                    }
+                        }
+                        .drawingGroup()
+                    )
+                    .drawingGroup()
                 } else {
                     // No transition — single shader, full pipeline
                     processedShaderLayer(modeIndex: mode, elapsed: elapsed, size: size)

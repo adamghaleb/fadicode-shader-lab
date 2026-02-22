@@ -37,10 +37,10 @@ static inline half4 pipelineFinalize(
     float posterizeLevels, float gridDarken,
     float hueSpread = 0.10, float complementMix = 0.0
 ) {
-    // Auto-contrast: aggressive S-curve to fill full dynamic range.
-    // Darkest → black, brightest → white.
-    lum = smoothstep(0.0, 0.45, lum);
-    lum = lum * lum * (3.0 - 2.0 * lum);
+    // Auto-contrast: single S-curve with good midtone spread.
+    // 0.55 upper bound = strong contrast, but the smoothstep shape
+    // distributes midtones smoothly (no double-curve crushing).
+    lum = smoothstep(0.0, 0.55, lum);
 
     // Output grayscale luminance — theme coloring, posterization,
     // pixelation, and grid lines are applied in the post-process pass.
