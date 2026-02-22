@@ -9,6 +9,7 @@ struct WorkingStateOverlay: View {
     var themeColor: NSColor? = nil
 
     // Tuning knobs
+    var mode: Int = 5
     var speed: Double = 1.0
     var maxIntensity: Double = 1.0
     var focusedIntensity: Double = 0.08
@@ -97,7 +98,8 @@ struct WorkingStateOverlay: View {
                             .float(Float(themeRGB.g)),
                             .float(Float(themeRGB.b)),
                             .float(Float(geo.size.width)),
-                            .float(Float(geo.size.height))
+                            .float(Float(geo.size.height)),
+                            .float(Float(mode))
                         )
                     )
                     // drawingGroup forces an offscreen Metal render pass,

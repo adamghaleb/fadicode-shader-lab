@@ -29,6 +29,7 @@ class TerminalState: ObservableObject {
     @Published var themeColor: NSColor = NSColor(red: 0.3, green: 0.6, blue: 1.0, alpha: 1.0)
 
     // Shader tuning
+    @Published var shaderMode: Int = 5 // 0-5, default Combined
     @Published var shaderSpeed: Double = 1.0
     @Published var maxIntensity: Double = 1.0
     @Published var focusedIntensity: Double = 0.08
@@ -49,6 +50,7 @@ struct ContentView: View {
                     isActive: state.isWorkingStateActive,
                     isFocused: state.isFocused,
                     themeColor: state.themeColor,
+                    mode: state.shaderMode,
                     speed: state.shaderSpeed,
                     maxIntensity: state.maxIntensity,
                     focusedIntensity: state.focusedIntensity,

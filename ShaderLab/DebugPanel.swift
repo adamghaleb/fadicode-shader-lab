@@ -96,6 +96,45 @@ struct DebugPanel: View {
 
                 Divider().background(Color.white.opacity(0.2))
 
+                // MARK: - Shader Preset
+                sectionHeader("Shader Preset")
+
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 6) {
+                    ForEach(shaderPresets, id: \.mode) { preset in
+                        Button {
+                            state.shaderMode = preset.mode
+                        } label: {
+                            HStack(spacing: 6) {
+                                Text(preset.icon)
+                                    .font(.system(size: 14))
+                                Text(preset.name)
+                                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 7)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(state.shaderMode == preset.mode
+                                        ? Color(nsColor: state.themeColor).opacity(0.25)
+                                        : Color.white.opacity(0.05))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .strokeBorder(
+                                        state.shaderMode == preset.mode
+                                            ? Color(nsColor: state.themeColor).opacity(0.6)
+                                            : Color.white.opacity(0.1),
+                                        lineWidth: 1
+                                    )
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundColor(state.shaderMode == preset.mode ? .white : .white.opacity(0.6))
+                    }
+                }
+
+                Divider().background(Color.white.opacity(0.2))
+
                 // MARK: - Shader Tuning
                 sectionHeader("Shader Tuning")
 
@@ -192,6 +231,17 @@ struct DebugPanel: View {
                 .tint(Color(nsColor: state.themeColor))
         }
     }
+
+    // MARK: - Shader Presets
+
+    private let shaderPresets: [(mode: Int, name: String, icon: String)] = [
+        (0, "Organic Flow", "~"),
+        (1, "Mandala",      "*"),
+        (2, "Point Cloud",  "."),
+        (3, "Aurora",       "/"),
+        (4, "Pulse Grid",   "#"),
+        (5, "Combined",     "+"),
+    ]
 
     // MARK: - Color Presets
 
