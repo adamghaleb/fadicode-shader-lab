@@ -31,7 +31,15 @@ struct WorkingStateOverlay: View {
     var body: some View {
         Group {
             if isVisible {
-                shaderView
+                ZStack {
+                    // Dim layer: darkens terminal content underneath
+                    Rectangle()
+                        .fill(Color.black)
+                        .opacity(intensity * 0.3)
+
+                    // Shader layer: the visual effect
+                    shaderView
+                }
             }
         }
         .allowsHitTesting(false)
@@ -79,8 +87,10 @@ struct WorkingStateOverlay: View {
         TimelineView(.animation) { timeline in
             let elapsed = timeline.date.timeIntervalSinceReferenceDate * speed
             GeometryReader { geo in
+                // White base gives the shader opaque pixels to transform.
+                // The shader returns its own alpha for transparency.
                 Rectangle()
-                    .fill(.clear)
+                    .fill(Color.white)
                     .colorEffect(
                         ShaderLibrary.workingStateEffect(
                             .float(Float(elapsed)),

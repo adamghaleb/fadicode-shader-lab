@@ -155,18 +155,9 @@ half4 workingStateEffect(
     combined += theme * edgeGlow * 0.3;
     combined *= vignette;
 
-    // Apply intensity
+    // Apply intensity — output own alpha so the overlay composites over content below
     float alpha = intensity * length(combined) * 1.5;
     alpha = clamp(alpha, 0.0, intensity * 0.85);
 
-    // Dim the terminal content when overlay is prominent
-    float dimFactor = 1.0 - intensity * 0.3;
-    half4 dimmedContent = half4(half3(float3(currentColor.rgb) * dimFactor), currentColor.a);
-
-    // Blend shader on top
-    half3 overlay = half3(combined);
-    half overlayAlpha = half(alpha);
-    half3 result = dimmedContent.rgb * (1.0h - overlayAlpha) + overlay * overlayAlpha;
-
-    return half4(result, currentColor.a);
+    return half4(half3(combined), half(alpha));
 }
