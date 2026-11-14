@@ -10,7 +10,9 @@ half4 combinedEffect(
     float viewWidth, float viewHeight,
     float pixelSize, float gridOpacity,
     float posterizeLevels,
-    float hueSpread, float complementMix
+    float hueSpread, float complementMix,
+    float contrast,
+    float brightness
 ) {
     if (intensity < 0.001) return half4(0.0h);
     PipelineSetup s = pipelineSetup(position, viewWidth, viewHeight, pixelSize, gridOpacity);
@@ -26,7 +28,9 @@ half4 combinedEffect(
     float radialWave = sin(s.dist * 8.0 - time * 0.5) * 0.5 + 0.5;
     mandala *= radialWave * smoothstep(1.8, 0.2, s.dist);
 
-    float2 pointGrid = s.uv * 12.0;
+    float aspect = viewWidth / viewHeight;
+    float2 auv = float2(s.uv.x * aspect, s.uv.y);
+    float2 pointGrid = auv * 12.0;
     float2 cellId = floor(pointGrid);
     float2 cellUv = fract(pointGrid);
     float points = 0.0;
@@ -51,5 +55,5 @@ half4 combinedEffect(
     lum *= vignette;
     lum = clamp(lum, 0.0, 1.0);
 
-    return pipelineFinalize(lum, intensity, float3(themeR, themeG, themeB), posterizeLevels, s.gridDarken, hueSpread, complementMix);
+    return pipelineFinalize(lum, intensity, float3(themeR, themeG, themeB), posterizeLevels, s.gridDarken, hueSpread, complementMix, contrast, brightness);
 }

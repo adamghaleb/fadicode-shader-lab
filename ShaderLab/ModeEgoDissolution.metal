@@ -12,7 +12,9 @@ half4 egoDissolutionEffect(
     float viewWidth, float viewHeight,
     float pixelSize, float gridOpacity,
     float posterizeLevels,
-    float hueSpread, float complementMix
+    float hueSpread, float complementMix,
+    float contrast,
+    float brightness
 ) {
     if (intensity < 0.001) return half4(0.0h);
     PipelineSetup s = pipelineSetup(position, viewWidth, viewHeight, pixelSize, gridOpacity);
@@ -70,5 +72,5 @@ half4 egoDissolutionEffect(
     lum *= smoothstep(1.8, 0.1, s.dist);
     lum = clamp(lum, 0.0, 1.0);
 
-    return pipelineFinalize(lum, intensity, float3(themeR, themeG, themeB), posterizeLevels, s.gridDarken, hueSpread, complementMix);
+    return pipelineFinalize(lum, intensity, float3(themeR, themeG, themeB), posterizeLevels, s.gridDarken, hueSpread, complementMix, contrast, brightness);
 }

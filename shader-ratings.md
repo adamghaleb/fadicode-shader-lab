@@ -1,29 +1,32 @@
 # Shader Ratings
 
 ## Best (starred)
+
+- Sinebow (mode 7)
+- Kaleidoscope (mode 10)
 - Voronoi (mode 12)
 - Spiral Galaxy (mode 13)
+- Lava Lamp (mode 15)
+- Sacred Geometry (mode 16)
+- Chrysanthemum (mode 20)
 - Machine Elves (mode 21)
+- Ego Dissolution (mode 25)
 - Folding Dimensions (mode 26)
 - Cymatics (mode 27)
 - Cosmic Web (mode 28)
 - Interference Crystal (mode 30)
+- DNA Helix (mode 32)
 - Entity Presence (mode 34)
 
 ## Good (thumbs up)
+
 - Light Grid (mode 6)
-- Sinebow (mode 7)
 - Gradient Spin (mode 8)
-- Kaleidoscope (mode 10)
-- Lava Lamp (mode 15)
-- Sacred Geometry (mode 16)
 - Moire (mode 19)
-- Chrysanthemum (mode 20)
 - Jewel Lattice (mode 23)
-- Ego Dissolution (mode 25)
-- DNA Helix (mode 32)
 
 ## Mid (okay)
+
 - Point Cloud (mode 2)
 - Plasma (mode 11)
 - Warp Tunnel (mode 17)
@@ -33,6 +36,7 @@
 - Tessellation Dance (mode 33)
 
 ## Rejected (thumbs down)
+
 - Organic Flow (mode 0)
 - Mandala (mode 1)
 - Aurora (mode 3)
@@ -43,3 +47,29 @@
 - Neural Bloom (mode 24)
 - Topographic Flow (mode 29)
 
+## Unrated
+
+- Fractal Mandelbrot (mode 35)
+- Quantum Field (mode 36)
+- Geometric Alchemy (mode 37)
+- Wormhole (mode 38)
+- Celestial Clockwork (mode 39)
+- Crystal Cavern (mode 40)
+- Electric Field (mode 41)
+- Resonance (mode 42)
+- Spirit Molecule (mode 43)
+- Flower of Life (mode 44)
+- Infinite Zoom (mode 45)
+- String Theory (mode 46)
+- Penrose Tiling (mode 47)
+- Akashic Field (mode 48)
+- Breath of God (mode 49)
+- Metatron's Cube (mode 50)
+- Void Bloom (mode 51)
+- Weaver's Loom (mode 52)
+- Timecrystal (mode 53)
+- Resonance Chamber (mode 54)
+- Event Horizon (mode 55)
+- Architect's Gaze (mode 56)
+- Sigil Network (mode 57)
+- Dream Catcher (mode 58)

@@ -10,7 +10,9 @@ half4 organicFlowEffect(
     float viewWidth, float viewHeight,
     float pixelSize, float gridOpacity,
     float posterizeLevels,
-    float hueSpread, float complementMix
+    float hueSpread, float complementMix,
+    float contrast,
+    float brightness
 ) {
     if (intensity < 0.001) return half4(0.0h);
     PipelineSetup s = pipelineSetup(position, viewWidth, viewHeight, pixelSize, gridOpacity);
@@ -23,5 +25,5 @@ half4 organicFlowEffect(
     float lum = flow * 0.8;
     lum *= smoothstep(1.6, 0.2, s.dist);
 
-    return pipelineFinalize(lum, intensity, float3(themeR, themeG, themeB), posterizeLevels, s.gridDarken, hueSpread, complementMix);
+    return pipelineFinalize(lum, intensity, float3(themeR, themeG, themeB), posterizeLevels, s.gridDarken, hueSpread, complementMix, contrast, brightness);
 }

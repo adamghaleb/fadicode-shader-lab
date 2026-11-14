@@ -12,7 +12,9 @@ half4 spiralGalaxyEffect(
     float viewWidth, float viewHeight,
     float pixelSize, float gridOpacity,
     float posterizeLevels,
-    float hueSpread, float complementMix
+    float hueSpread, float complementMix,
+    float contrast,
+    float brightness
 ) {
     if (intensity < 0.001) return half4(0.0h);
     PipelineSetup s = pipelineSetup(position, viewWidth, viewHeight, pixelSize, gridOpacity);
@@ -33,7 +35,8 @@ half4 spiralGalaxyEffect(
     float core = smoothstep(0.4, 0.0, s.dist) * 0.5;
 
     // Star field: scattered points along the arms
-    float2 starGrid = s.uv * 20.0;
+    float aspect = viewWidth / viewHeight;
+    float2 starGrid = float2(s.uv.x * aspect, s.uv.y) * 20.0;
     float2 starId = floor(starGrid);
     float2 starUv = fract(starGrid);
     float stars = 0.0;
@@ -58,5 +61,5 @@ half4 spiralGalaxyEffect(
     lum *= smoothstep(1.8, 0.2, s.dist);
     lum = clamp(lum, 0.0, 1.0);
 
-    return pipelineFinalize(lum, intensity, float3(themeR, themeG, themeB), posterizeLevels, s.gridDarken, hueSpread, complementMix);
+    return pipelineFinalize(lum, intensity, float3(themeR, themeG, themeB), posterizeLevels, s.gridDarken, hueSpread, complementMix, contrast, brightness);
 }

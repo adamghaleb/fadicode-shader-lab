@@ -96,6 +96,10 @@ static inline float3 posterize(float lum, float3 themeRGB, float levels,
     // Quantize brightness into bands
     float q = floor(lum * levels) / levels;
 
+    // Band thresholds for white transition
+    float topBand = (levels - 1.0) / levels;
+    float bridgeBand = (levels - 2.0) / levels;
+
     // Analogous hue ramp: ±hueSpread on the color wheel
     // q=0 (shadow) → cooler, q=0.5 (mid) → theme, q=1 (highlight) → warmer
     float hueT = q * 2.0 - 1.0; // remap 0..1 → -1..+1
@@ -112,6 +116,15 @@ static inline float3 posterize(float lum, float3 themeRGB, float levels,
     float val = mix(0.06, 1.2, q);
     val = clamp(val, 0.0, 1.0);
 
+    // Top band → pure white, bridge band → light desaturated stepping stone
+    if (q >= topBand) {
+        sat = 0.0;
+        val = 1.0;
+    } else if (q >= bridgeBand) {
+        sat *= 0.3;
+        val = mix(val, 1.0, 0.65);
+    }
+
     float3 analogousColor = hsv2rgb(float3(hue, sat, val));
 
     // Complementary accent: opposite hue, only in highlights
@@ -126,6 +139,32 @@ static inline float3 posterize(float lum, float3 themeRGB, float levels,
     }
 
     return analogousColor;
+}
+
+// ============================================================
+// Gradient Map: map luminance to a multi-stop color palette
+// palette[] contains up to 8 RGB colors evenly or custom-spaced
+// ============================================================
+
+/// Smooth interpolation: lerp between adjacent palette stops based on luminance
+static inline float3 gradientMapSmooth(float lum, float3 palette[8], int count) {
+    if (count <= 1) return palette[0];
+    float t = clamp(lum, 0.0, 1.0) * float(count - 1);
+    int idx = int(t);
+    float frac = t - float(idx);
+    idx = min(idx, count - 2);
+    return mix(palette[idx], palette[idx + 1], frac);
+}
+
+/// Posterized gradient map: quantize luminance into bands, then map to palette
+static inline float3 gradientMapPosterize(float lum, float3 palette[8], int count, float levels) {
+    if (levels < 2.0) {
+        // No posterization — smooth gradient map
+        return gradientMapSmooth(lum, palette, count);
+    }
+    // Quantize luminance into discrete bands
+    float q = floor(lum * levels) / levels;
+    return gradientMapSmooth(q, palette, count);
 }
 
 #endif

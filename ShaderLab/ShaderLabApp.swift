@@ -1,5 +1,41 @@
 import SwiftUI
 
+enum ShaderLevel: String, Codable, CaseIterable {
+    case low, medium, high
+
+    var shortLabel: String {
+        switch self {
+        case .low: return "L"
+        case .medium: return "M"
+        case .high: return "H"
+        }
+    }
+}
+
+enum ShaderTag: String, Codable, CaseIterable {
+    case geometric, symmetrical, organic, rippling, flowing
+    case pulsing, fractal, crystalline, ethereal, hypnotic
+}
+
+struct ShaderProfile: Codable, Equatable {
+    var coverage: ShaderLevel = .medium  // how much screen area the shader fills
+    var density: ShaderLevel = .medium   // how much color vs black (lightness fill)
+    var speed: ShaderLevel = .medium
+    var energy: ShaderLevel = .medium
+    var tags: Set<ShaderTag> = []
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        coverage = try c.decodeIfPresent(ShaderLevel.self, forKey: .coverage) ?? .medium
+        density = try c.decodeIfPresent(ShaderLevel.self, forKey: .density) ?? .medium
+        speed = try c.decodeIfPresent(ShaderLevel.self, forKey: .speed) ?? .medium
+        energy = try c.decodeIfPresent(ShaderLevel.self, forKey: .energy) ?? .medium
+        tags = try c.decodeIfPresent(Set<ShaderTag>.self, forKey: .tags) ?? []
+    }
+}
+
 struct ShaderTuning: Codable, Equatable {
     var speedMultiplier: Double = 1.0  // 0.1–5.0
     var contrast: Double = 1.0         // 0.0–3.0
@@ -44,16 +80,7 @@ class TerminalState: ObservableObject {
     @Published var isFocused: Bool = true
 
     // Theme color
-    @Published var themeColor: NSColor = NSColor(red: 0.3, green: 0.6, blue: 1.0, alpha: 1.0) {
-        didSet {
-            guard !isLoading else { return }
-            let key = themeColorKey(themeColor)
-            if let favIdx = favoritePalettes[key] {
-                selectedPresetIndex = favIdx
-                paletteMode = .preset
-            }
-        }
-    }
+    @Published var themeColor: NSColor = NSColor(red: 0.3, green: 0.6, blue: 1.0, alpha: 1.0)
 
     // Shader tuning
     @Published var shaderMode: Int = 12 // 0-58, default Voronoi
@@ -63,13 +90,13 @@ class TerminalState: ObservableObject {
     @Published var focusedIntensity: Double = 0.08
     @Published var focusedOpacity: Double = 0.50 // overall opacity of shader overlay when terminal is focused
     @Published var focusInDuration: Double = 0.2
-    @Published var focusOutDuration: Double = 0.5
+    @Published var focusOutDuration: Double = 0.2
 
     // Pixelation
     @Published var pixelSize: Double = 6.0 // 0 = off, otherwise block size in points
-    @Published var gridOpacity: Double = 1.0           // unfocused grid line thickness
+    @Published var gridOpacity: Double = 1.5           // unfocused grid line thickness
     @Published var focusedGridOpacity: Double = 2.5    // focused grid line thickness
-    @Published var resolutionScale: Double = 0.1       // 0.1–1.0, render shader at lower res then upscale
+    @Published var resolutionScale: Double = 0.2       // 0.1–1.0, render shader at lower res then upscale
 
     // Posterization
     @Published var posterizeLevels: Double = 7.0 // 0 = off (plain tint), 2+ = posterize bands
@@ -86,44 +113,30 @@ class TerminalState: ObservableObject {
         didSet { if !isLoading { saveTunings() } }
     }
 
-    // Palette system
-    @Published var paletteMode: PaletteMode = .auto
-    @Published var selectedPresetIndex: Int = 0
-    @Published var customPalette: GradientPalette = makeDefaultCustomPalette()
-
-    // Favorite palette per theme color
-    @Published var favoritePalettes: [String: Int] = [:] {
-        didSet {
-            guard !isLoading else { return }
-            if let data = try? JSONEncoder().encode(favoritePalettes) {
-                UserDefaults.standard.set(data, forKey: "favoritePalettes")
-            }
-        }
-    }
-
-    var themePalettes: [GradientPalette] {
-        generateThemePalettes(themeColor: themeColor)
+    // Per-shader profiles (coverage, speed, energy, tags) for LLM export
+    @Published var shaderProfiles: [Int: ShaderProfile] = [:] {
+        didSet { if !isLoading { saveProfiles() } }
     }
 
     var resolvedPalette: GradientPalette {
-        switch paletteMode {
-        case .auto:
-            return generateAutoPalette(
-                themeColor: themeColor,
-                hueSpread: Float(hueSpread),
-                complementMix: Float(complementMix),
-                contrast: Float(paletteContrast),
-                saturation: Float(paletteSaturation),
-                maxBrightness: isFocused ? 0.55 : 1.0,
-                levels: isFocused ? max(Int(posterizeLevels) - 2, 3) : max(Int(posterizeLevels), 3)
-            )
-        case .preset:
-            let palettes = themePalettes
-            let idx = min(selectedPresetIndex, palettes.count - 1)
-            return palettes[max(idx, 0)]
-        case .custom:
-            return customPalette
+        let full = generateAutoPalette(
+            themeColor: themeColor,
+            hueSpread: Float(hueSpread),
+            complementMix: Float(complementMix),
+            contrast: Float(paletteContrast),
+            saturation: Float(paletteSaturation),
+            levels: max(Int(posterizeLevels), 3)
+        )
+        // When focused, drop the top 2 brightest stops and remap to full range
+        if isFocused && full.stops.count > 4 {
+            let kept = Array(full.stops.sorted { $0.position < $1.position }.prefix(full.stops.count - 2))
+            let maxPos = kept.last?.position ?? 1.0
+            let remapped = kept.map { stop in
+                PaletteStop(color: stop.color, position: maxPos > 0 ? stop.position / maxPos : stop.position)
+            }
+            return GradientPalette(name: "Auto", stops: remapped, isBuiltIn: true)
         }
+        return full
     }
 
     var paletteFloats: [Float] { resolvedPalette.toFloatArray() }
@@ -190,27 +203,26 @@ class TerminalState: ObservableObject {
 
     init() {
         isLoading = true
-        let hasExisting = UserDefaults.standard.array(forKey: "starredShaders") != nil
-        if hasExisting {
-            if let arr = UserDefaults.standard.array(forKey: "starredShaders") as? [Int] {
-                starredShaders = Set(arr)
-            }
-            if let arr = UserDefaults.standard.array(forKey: "likedShaders") as? [Int] {
-                likedShaders = Set(arr)
-            }
-            if let arr = UserDefaults.standard.array(forKey: "midShaders") as? [Int] {
-                midShaders = Set(arr)
-            }
-            if let arr = UserDefaults.standard.array(forKey: "dislikedShaders") as? [Int] {
-                dislikedShaders = Set(arr)
-            }
+        // Load ratings: JSON file first, then UserDefaults migration, then defaults
+        if let data = try? Data(contentsOf: Self.ratingsFileURL),
+           let saved = try? JSONDecoder().decode(SavedRatings.self, from: data) {
+            starredShaders = Set(saved.starred)
+            likedShaders = Set(saved.liked)
+            midShaders = Set(saved.mid)
+            dislikedShaders = Set(saved.disliked)
+        } else if UserDefaults.standard.array(forKey: "starredShaders") != nil {
+            // Migrate from UserDefaults to JSON file
+            if let arr = UserDefaults.standard.array(forKey: "starredShaders") as? [Int] { starredShaders = Set(arr) }
+            if let arr = UserDefaults.standard.array(forKey: "likedShaders") as? [Int] { likedShaders = Set(arr) }
+            if let arr = UserDefaults.standard.array(forKey: "midShaders") as? [Int] { midShaders = Set(arr) }
+            if let arr = UserDefaults.standard.array(forKey: "dislikedShaders") as? [Int] { dislikedShaders = Set(arr) }
+            saveRatings() // migrate to file
         } else {
-            // First launch: seed with pre-existing ratings
+            // First launch: seed with defaults
             starredShaders = Self.defaultStarred
             likedShaders = Self.defaultLiked
             midShaders = Self.defaultMid
             dislikedShaders = Self.defaultDisliked
-            // Persist so next launch loads from UserDefaults
             saveRatings()
         }
         // Load per-shader tunings from JSON file (fall back to UserDefaults for migration)
@@ -222,20 +234,12 @@ class TerminalState: ObservableObject {
             shaderTunings = decoded
             saveTunings() // migrate to file
         }
-        // Load favorite palettes
-        if let data = UserDefaults.standard.data(forKey: "favoritePalettes"),
-           let decoded = try? JSONDecoder().decode([String: Int].self, from: data) {
-            favoritePalettes = decoded
+        // Load shader profiles
+        if let data = try? Data(contentsOf: Self.profilesFileURL),
+           let decoded = try? JSONDecoder().decode([Int: ShaderProfile].self, from: data) {
+            shaderProfiles = decoded
         }
         isLoading = false
-    }
-
-    func themeColorKey(_ color: NSColor) -> String {
-        let c = color.usingColorSpace(.sRGB) ?? color
-        let r = Int(c.redComponent * 255)
-        let g = Int(c.greenComponent * 255)
-        let b = Int(c.blueComponent * 255)
-        return String(format: "%02X%02X%02X", r, g, b)
     }
 
     // Tunings file lives next to the project so it's visible, version-controllable, and won't vanish
@@ -253,11 +257,96 @@ class TerminalState: ObservableObject {
         }
     }
 
+    // Profiles file lives next to tunings
+    private static let profilesFileURL: URL = {
+        let projectDir = URL(fileURLWithPath: "/Users/adamghaleb/Documents/windsurf projects/fadicode-shader-lab")
+        return projectDir.appendingPathComponent("shader-profiles.json")
+    }()
+
+    private func saveProfiles() {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        if let data = try? encoder.encode(shaderProfiles) {
+            try? data.write(to: Self.profilesFileURL, options: .atomic)
+        }
+    }
+
+    private static let exportFileURL: URL = {
+        let projectDir = URL(fileURLWithPath: "/Users/adamghaleb/Documents/windsurf projects/fadicode-shader-lab")
+        return projectDir.appendingPathComponent("shader-profiles-export.json")
+    }()
+
+    func exportProfilesJSON() -> String {
+        struct ExportEntry: Codable {
+            let mode: Int
+            let name: String
+            let coverage: String
+            let density: String
+            let speed: String
+            let energy: String
+            let tags: [String]
+            let tuning: ExportTuning?
+        }
+        struct ExportTuning: Codable {
+            let speedMultiplier: Double
+            let contrast: Double
+            let brightness: Double
+        }
+
+        let entries: [ExportEntry] = shaderProfiles.keys.sorted().compactMap { mode in
+            guard let profile = shaderProfiles[mode],
+                  let preset = shaderPresets.first(where: { $0.mode == mode }) else { return nil }
+            let tuning = shaderTunings[mode]
+            return ExportEntry(
+                mode: mode,
+                name: preset.name,
+                coverage: profile.coverage.rawValue,
+                density: profile.density.rawValue,
+                speed: profile.speed.rawValue,
+                energy: profile.energy.rawValue,
+                tags: profile.tags.map(\.rawValue).sorted(),
+                tuning: tuning.map { ExportTuning(speedMultiplier: $0.speedMultiplier, contrast: $0.contrast, brightness: $0.brightness) }
+            )
+        }
+
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        let json = (try? encoder.encode(entries)).flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
+
+        // Copy to clipboard
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(json, forType: .string)
+
+        // Write to file
+        try? json.write(to: Self.exportFileURL, atomically: true, encoding: .utf8)
+
+        return json
+    }
+
+    private static let ratingsFileURL: URL = {
+        let projectDir = URL(fileURLWithPath: "/Users/adamghaleb/Documents/windsurf projects/fadicode-shader-lab")
+        return projectDir.appendingPathComponent("shader-ratings.json")
+    }()
+
+    private struct SavedRatings: Codable {
+        var starred: [Int]
+        var liked: [Int]
+        var mid: [Int]
+        var disliked: [Int]
+    }
+
     private func saveRatings() {
-        UserDefaults.standard.set(Array(starredShaders), forKey: "starredShaders")
-        UserDefaults.standard.set(Array(likedShaders), forKey: "likedShaders")
-        UserDefaults.standard.set(Array(midShaders), forKey: "midShaders")
-        UserDefaults.standard.set(Array(dislikedShaders), forKey: "dislikedShaders")
+        let ratings = SavedRatings(
+            starred: Array(starredShaders).sorted(),
+            liked: Array(likedShaders).sorted(),
+            mid: Array(midShaders).sorted(),
+            disliked: Array(dislikedShaders).sorted()
+        )
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        if let data = try? encoder.encode(ratings) {
+            try? data.write(to: Self.ratingsFileURL, options: .atomic)
+        }
     }
 
     func resetInfernoParams() {
@@ -267,6 +356,7 @@ class TerminalState: ObservableObject {
         infernoParam3 = defs.count > 2 ? defs[2].defaultValue : 0.0
         infernoParam4 = defs.count > 3 ? defs[3].defaultValue : 0.0
     }
+
 }
 
 struct ContentView: View {

@@ -12,15 +12,19 @@ half4 pointCloudEffect(
     float viewWidth, float viewHeight,
     float pixelSize, float gridOpacity,
     float posterizeLevels,
-    float hueSpread, float complementMix
+    float hueSpread, float complementMix,
+    float contrast,
+    float brightness
 ) {
     if (intensity < 0.001) return half4(0.0h);
     PipelineSetup s = pipelineSetup(position, viewWidth, viewHeight, pixelSize, gridOpacity);
 
     float lum = 0.0;
+    float aspect = viewWidth / viewHeight;
+    float2 auv = float2(s.uv.x * aspect, s.uv.y);
 
     // Primary layer: large glowing orbs
-    float2 grid1 = s.uv * 8.0;
+    float2 grid1 = auv * 8.0;
     float2 cellId1 = floor(grid1);
     float2 cellUv1 = fract(grid1);
     for (int dy = -1; dy <= 1; dy++) {
@@ -42,7 +46,7 @@ half4 pointCloudEffect(
     }
 
     // Secondary layer: medium scattered dots
-    float2 grid2 = s.uv * 14.0;
+    float2 grid2 = auv * 14.0;
     float2 cellId2 = floor(grid2);
     float2 cellUv2 = fract(grid2);
     for (int dy = -1; dy <= 1; dy++) {
@@ -65,5 +69,5 @@ half4 pointCloudEffect(
     lum *= smoothstep(1.5, 0.3, s.dist);
     lum = clamp(lum, 0.0, 1.0);
 
-    return pipelineFinalize(lum, intensity, float3(themeR, themeG, themeB), posterizeLevels, s.gridDarken, hueSpread, complementMix);
+    return pipelineFinalize(lum, intensity, float3(themeR, themeG, themeB), posterizeLevels, s.gridDarken, hueSpread, complementMix, contrast, brightness);
 }

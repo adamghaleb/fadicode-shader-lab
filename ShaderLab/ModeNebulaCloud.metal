@@ -12,7 +12,9 @@ half4 nebulaCloudEffect(
     float viewWidth, float viewHeight,
     float pixelSize, float gridOpacity,
     float posterizeLevels,
-    float hueSpread, float complementMix
+    float hueSpread, float complementMix,
+    float contrast,
+    float brightness
 ) {
     if (intensity < 0.001) return half4(0.0h);
     PipelineSetup s = pipelineSetup(position, viewWidth, viewHeight, pixelSize, gridOpacity);
@@ -49,7 +51,8 @@ half4 nebulaCloudEffect(
     cloud += fg * 0.25;
 
     // Stars peeking through: bright points in dark areas
-    float2 starGrid = s.uv * 30.0;
+    float aspect = viewWidth / viewHeight;
+    float2 starGrid = float2(s.uv.x * aspect, s.uv.y) * 30.0;
     float2 starId = floor(starGrid);
     float2 starUv = fract(starGrid);
     float stars = 0.0;
@@ -74,5 +77,5 @@ half4 nebulaCloudEffect(
     lum *= smoothstep(1.8, 0.1, s.dist);
     lum = clamp(lum, 0.0, 1.0);
 
-    return pipelineFinalize(lum, intensity, float3(themeR, themeG, themeB), posterizeLevels, s.gridDarken, hueSpread, complementMix);
+    return pipelineFinalize(lum, intensity, float3(themeR, themeG, themeB), posterizeLevels, s.gridDarken, hueSpread, complementMix, contrast, brightness);
 }

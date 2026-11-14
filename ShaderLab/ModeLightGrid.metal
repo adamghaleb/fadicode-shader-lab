@@ -10,13 +10,17 @@ half4 lightGridEffect(
     float viewWidth, float viewHeight,
     float pixelSize, float gridOpacity,
     float posterizeLevels,
-    float hueSpread, float complementMix
+    float hueSpread, float complementMix,
+    float contrast,
+    float brightness
 ) {
     if (intensity < 0.001) return half4(0.0h);
     PipelineSetup s = pipelineSetup(position, viewWidth, viewHeight, pixelSize, gridOpacity);
 
     float t = time * 0.4; // slowed from raw time
-    float2 point = s.uv * 8.0;
+    float aspect = viewWidth / viewHeight;
+    float2 auv = float2(s.uv.x * aspect, s.uv.y);
+    float2 point = auv * 8.0;
     float2 nonRepeating = float2(12.9898, 78.233);
     float2 groupNumber = floor(point);
     float dotP = dot(groupNumber, nonRepeating);
@@ -39,5 +43,5 @@ half4 lightGridEffect(
     lum *= smoothstep(1.6, 0.2, s.dist);
     lum = clamp(lum, 0.0, 1.0);
 
-    return pipelineFinalize(lum, intensity, float3(themeR, themeG, themeB), posterizeLevels, s.gridDarken, hueSpread, complementMix);
+    return pipelineFinalize(lum, intensity, float3(themeR, themeG, themeB), posterizeLevels, s.gridDarken, hueSpread, complementMix, contrast, brightness);
 }

@@ -97,7 +97,7 @@ struct MockTerminalView: View {
             .background(Color.white.opacity(0.05))
         }
         .padding(12)
-        .opacity(isFocused ? 1.0 : 0.5)
+        .opacity(isFocused ? 1.0 : 0.3)
         .shadow(color: isFocused ? Color(nsColor: state.themeColor.blended(withFraction: 0.75, of: .black) ?? .black).opacity(0.7) : .clear, radius: 1, x: 0, y: 1)
         .shadow(color: isFocused ? Color(nsColor: state.themeColor.blended(withFraction: 0.75, of: .black) ?? .black).opacity(0.3) : .clear, radius: 12, x: 0, y: 4)
     }

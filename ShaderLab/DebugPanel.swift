@@ -1,13 +1,62 @@
 import SwiftUI
 
+private enum PanelTab: String, CaseIterable {
+    case controls = "Controls"
+    case profiles = "Profiles"
+}
+
 /// Debug control panel for testing shader effects.
 struct DebugPanel: View {
     @EnvironmentObject var state: TerminalState
     @State private var showCopied: Bool = false
     @State private var showExported: Bool = false
     @State private var expandedShader: Int? = nil
+    @State private var activeTab: PanelTab = .controls
 
     var body: some View {
+        VStack(spacing: 0) {
+            // Tab bar
+            HStack(spacing: 0) {
+                ForEach(PanelTab.allCases, id: \.self) { tab in
+                    Button {
+                        activeTab = tab
+                    } label: {
+                        Text(tab.rawValue)
+                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                            .foregroundColor(activeTab == tab ? .white : .white.opacity(0.4))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .background(
+                                activeTab == tab
+                                    ? Color(nsColor: state.themeColor).opacity(0.2)
+                                    : Color.clear
+                            )
+                            .overlay(alignment: .bottom) {
+                                if activeTab == tab {
+                                    Rectangle()
+                                        .fill(Color(nsColor: state.themeColor))
+                                        .frame(height: 2)
+                                }
+                            }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .background(Color(white: 0.08))
+
+            // Tab content
+            switch activeTab {
+            case .controls:
+                controlsTab
+            case .profiles:
+                ProfilesTab()
+                    .environmentObject(state)
+            }
+        }
+        .background(Color(white: 0.1))
+    }
+
+    private var controlsTab: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 // Header
@@ -102,18 +151,6 @@ struct DebugPanel: View {
                 // MARK: - Palette
                 sectionHeader("Palette")
 
-                // Mode picker: Auto / Theme / Custom
-                HStack(spacing: 6) {
-                    ForEach(PaletteMode.allCases, id: \.rawValue) { mode in
-                        Button(mode.label) {
-                            state.paletteMode = mode
-                        }
-                        .buttonStyle(DebugButtonStyle(
-                            color: state.paletteMode == mode ? Color(nsColor: state.themeColor) : .gray
-                        ))
-                    }
-                }
-
                 // Gradient preview strip
                 RoundedRectangle(cornerRadius: 4)
                     .fill(state.resolvedPalette.swiftUIGradient)
@@ -123,20 +160,10 @@ struct DebugPanel: View {
                             .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
                     )
 
-                // Mode-specific controls
-                switch state.paletteMode {
-                case .auto:
-                    sliderRow("Hue Spread", value: $state.hueSpread, range: 0.0...0.50)
-                    sliderRow("Complement", value: $state.complementMix, range: 0.0...0.5)
-                    sliderRow("Saturation", value: $state.paletteSaturation, range: 0.0...2.0)
-                    sliderRow("Contrast", value: $state.paletteContrast, range: 0.5...2.0)
-
-                case .preset:
-                    presetPaletteGrid
-
-                case .custom:
-                    customPaletteEditor
-                }
+                sliderRow("Hue Spread", value: $state.hueSpread, range: 0.0...0.50)
+                sliderRow("Complement", value: $state.complementMix, range: 0.0...0.5)
+                sliderRow("Saturation", value: $state.paletteSaturation, range: 0.0...2.0)
+                sliderRow("Contrast", value: $state.paletteContrast, range: 0.5...2.0)
 
                 Divider().background(Color.white.opacity(0.2))
 
@@ -403,7 +430,6 @@ struct DebugPanel: View {
             }
             .padding(16)
         }
-        .background(Color(white: 0.1))
     }
 
     // MARK: - Inferno Parameter Sliders
@@ -773,148 +799,7 @@ struct DebugPanel: View {
     }
 
     private func sliderRow(_ label: String, value: Binding<Double>, range: ClosedRange<Double>) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack {
-                Text(label)
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundColor(.white.opacity(0.6))
-                Spacer()
-                Text(String(format: "%.2f", value.wrappedValue))
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundColor(.white.opacity(0.8))
-            }
-            Slider(value: value, in: range)
-                .tint(Color(nsColor: state.themeColor))
-        }
-    }
-
-    // MARK: - Preset Palette Grid
-
-    private var presetPaletteGrid: some View {
-        let palettes = state.themePalettes
-        let favKey = state.themeColorKey(state.themeColor)
-        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
-            ForEach(Array(palettes.enumerated()), id: \.offset) { index, palette in
-                Button {
-                    state.selectedPresetIndex = index
-                } label: {
-                    VStack(spacing: 3) {
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(palette.swiftUIGradient)
-                            .frame(height: 16)
-                            .overlay(alignment: .topTrailing) {
-                                let isFav = state.favoritePalettes[favKey] == index
-                                Image(systemName: isFav ? "star.fill" : "star")
-                                    .font(.system(size: 8))
-                                    .foregroundColor(isFav ? .yellow : .white.opacity(0.3))
-                                    .padding(2)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        if state.favoritePalettes[favKey] == index {
-                                            state.favoritePalettes.removeValue(forKey: favKey)
-                                        } else {
-                                            state.favoritePalettes[favKey] = index
-                                        }
-                                    }
-                            }
-                        Text(palette.name)
-                            .font(.system(size: 9, weight: .medium, design: .monospaced))
-                            .foregroundColor(.white.opacity(0.7))
-                            .lineLimit(1)
-                    }
-                    .padding(4)
-                    .background(
-                        RoundedRectangle(cornerRadius: 5)
-                            .fill(state.selectedPresetIndex == index
-                                ? Color(nsColor: state.themeColor).opacity(0.2)
-                                : Color.white.opacity(0.05))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 5)
-                            .strokeBorder(
-                                state.selectedPresetIndex == index
-                                    ? Color(nsColor: state.themeColor).opacity(0.6)
-                                    : Color.white.opacity(0.1),
-                                lineWidth: 1
-                            )
-                    )
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    // MARK: - Custom Palette Editor
-
-    private var customPaletteEditor: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ForEach(Array(state.customPalette.stops.enumerated()), id: \.element.id) { index, stop in
-                HStack(spacing: 8) {
-                    Text("Stop \(index + 1)")
-                        .font(.system(size: 10, design: .monospaced))
-                        .foregroundColor(.white.opacity(0.5))
-                        .frame(width: 50, alignment: .leading)
-
-                    ColorPicker("", selection: Binding(
-                        get: { Color(nsColor: state.customPalette.stops[index].color) },
-                        set: { state.customPalette.stops[index].color = NSColor($0) }
-                    ))
-                    .labelsHidden()
-                    .frame(width: 30)
-
-                    // Position slider
-                    if index > 0 && index < state.customPalette.stops.count - 1 {
-                        Slider(
-                            value: Binding(
-                                get: { Double(state.customPalette.stops[index].position) },
-                                set: { state.customPalette.stops[index].position = Float($0) }
-                            ),
-                            in: 0.01...0.99
-                        )
-                        .tint(Color(nsColor: state.themeColor))
-                    } else {
-                        Spacer()
-                    }
-
-                    // Remove button (only if > 2 stops)
-                    if state.customPalette.stops.count > 2 && index > 0 && index < state.customPalette.stops.count - 1 {
-                        Button {
-                            state.customPalette.stops.remove(at: index)
-                        } label: {
-                            Image(systemName: "minus.circle.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.red.opacity(0.6))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
-
-            HStack(spacing: 8) {
-                // Add stop (max 8)
-                if state.customPalette.stops.count < 8 {
-                    Button {
-                        let newPos = Float(state.customPalette.stops.count - 1) / Float(state.customPalette.stops.count)
-                        let newStop = PaletteStop(
-                            color: NSColor(red: 0.5, green: 0.5, blue: 0.5, alpha: 1),
-                            position: newPos
-                        )
-                        state.customPalette.stops.insert(newStop, at: state.customPalette.stops.count - 1)
-                    } label: {
-                        HStack(spacing: 3) {
-                            Image(systemName: "plus.circle.fill")
-                            Text("Add Stop")
-                        }
-                    }
-                    .buttonStyle(DebugButtonStyle(color: .green))
-                }
-
-                Button("Reset") {
-                    state.customPalette = makeDefaultCustomPalette()
-                }
-                .buttonStyle(DebugButtonStyle(color: .yellow))
-            }
-        }
+        SliderRowView(label: label, value: value, range: range, themeColor: state.themeColor)
     }
 
     // MARK: - Pixel Presets
@@ -952,6 +837,67 @@ struct DebugPanel: View {
         ("Lime",    NSColor(red: 0.55, green: 0.90, blue: 0.20, alpha: 1)),
         ("White",   NSColor(red: 0.85, green: 0.85, blue: 0.85, alpha: 1)),
     ]
+}
+
+// MARK: - Editable Slider Row
+
+struct SliderRowView: View {
+    let label: String
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+    let themeColor: NSColor
+
+    @State private var isEditing = false
+    @State private var editText = ""
+    @FocusState private var fieldFocused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack {
+                Text(label)
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.6))
+                Spacer()
+                if isEditing {
+                    TextField("", text: $editText)
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.trailing)
+                        .textFieldStyle(.plain)
+                        .frame(width: 60)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                        .background(Color.white.opacity(0.1))
+                        .cornerRadius(3)
+                        .focused($fieldFocused)
+                        .onSubmit { commitEdit() }
+                        .onExitCommand { cancelEdit() }
+                } else {
+                    Text(String(format: "%.2f", value))
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.8))
+                        .onTapGesture {
+                            editText = String(format: "%.2f", value)
+                            isEditing = true
+                            fieldFocused = true
+                        }
+                }
+            }
+            Slider(value: $value, in: range)
+                .tint(Color(nsColor: themeColor))
+        }
+    }
+
+    private func commitEdit() {
+        if let parsed = Double(editText) {
+            value = min(max(parsed, range.lowerBound), range.upperBound)
+        }
+        isEditing = false
+    }
+
+    private func cancelEdit() {
+        isEditing = false
+    }
 }
 
 // MARK: - Button Style

@@ -13,16 +13,28 @@ struct WorkingStateOverlay: View {
     var speed: Double = 1.0
     var maxIntensity: Double = 1.0
     var focusedIntensity: Double = 0.08
+    var focusedOpacity: Double = 0.15
     var focusInDuration: Double = 0.2
     var focusOutDuration: Double = 0.5
     var pixelSize: Double = 0.0
     var gridOpacity: Double = 0.6
+    var focusedGridOpacity: Double = 2.5
+    var resolutionScale: Double = 1.0
     var posterizeLevels: Double = 5.0
     var hueSpread: Double = 0.10
     var complementMix: Double = 0.0
     var transitionDuration: Double = 3.0
 
+    // Palette system
+    var paletteFloats: [Float] = []
+    var paletteCount: Int = 0
+
+    // Per-shader tuning
+    var shaderTunings: [Int: ShaderTuning] = [:]
+
     @State private var intensity: Double = 0.0
+    @State private var shaderOpacity: Double = 0.0
+    @State private var activeGridOpacity: Double = 0.6
     @State private var isVisible: Bool = false
     @State private var startDate: Date = .now
 
@@ -53,6 +65,7 @@ struct WorkingStateOverlay: View {
                     // Shader layer: the visual effect
                     shaderView
                 }
+                .opacity(shaderOpacity)
             }
         }
         .allowsHitTesting(false)
@@ -61,12 +74,17 @@ struct WorkingStateOverlay: View {
                 startDate = .now
                 isVisible = true
                 let target = isFocused ? focusedIntensity : maxIntensity
+                let opacityTarget = isFocused ? focusedOpacity : 1.0
+                let gridTarget = isFocused ? focusedGridOpacity : gridOpacity
                 withAnimation(.easeIn(duration: 0.4)) {
                     intensity = target
+                    shaderOpacity = opacityTarget
+                    activeGridOpacity = gridTarget
                 }
             } else {
                 withAnimation(.easeOut(duration: 0.5)) {
                     intensity = 0.0
+                    shaderOpacity = 0.0
                 }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                     if !isActive { isVisible = false }
@@ -78,10 +96,14 @@ struct WorkingStateOverlay: View {
             if focused {
                 withAnimation(.easeOut(duration: focusInDuration)) {
                     intensity = focusedIntensity
+                    shaderOpacity = focusedOpacity
+                    activeGridOpacity = focusedGridOpacity
                 }
             } else {
                 withAnimation(.easeIn(duration: focusOutDuration)) {
                     intensity = maxIntensity
+                    shaderOpacity = 1.0
+                    activeGridOpacity = gridOpacity
                 }
             }
         }
@@ -94,6 +116,18 @@ struct WorkingStateOverlay: View {
             guard isActive && isFocused else { return }
             withAnimation(.easeInOut(duration: 0.15)) { intensity = newVal }
         }
+        .onChange(of: focusedOpacity) { newVal in
+            guard isActive && isFocused else { return }
+            withAnimation(.easeInOut(duration: 0.15)) { shaderOpacity = newVal }
+        }
+        .onChange(of: gridOpacity) { newVal in
+            guard isActive && !isFocused else { return }
+            withAnimation(.easeInOut(duration: 0.15)) { activeGridOpacity = newVal }
+        }
+        .onChange(of: focusedGridOpacity) { newVal in
+            guard isActive && isFocused else { return }
+            withAnimation(.easeInOut(duration: 0.15)) { activeGridOpacity = newVal }
+        }
         .onChange(of: mode) { newMode in
             guard isVisible else {
                 lastKnownMode = newMode
@@ -105,7 +139,21 @@ struct WorkingStateOverlay: View {
             }
             lastKnownMode = newMode
         }
-        .onAppear { lastKnownMode = mode }
+        .onAppear {
+            lastKnownMode = mode
+            activeGridOpacity = isFocused ? focusedGridOpacity : gridOpacity
+            // Kick initial state if already active on appear
+            if isActive {
+                startDate = .now
+                isVisible = true
+                let target = isFocused ? focusedIntensity : maxIntensity
+                let opacityTarget = isFocused ? focusedOpacity : 1.0
+                withAnimation(.easeIn(duration: 0.4)) {
+                    intensity = target
+                    shaderOpacity = opacityTarget
+                }
+            }
+        }
     }
 
     // Maps mode index to the stitchable shader function name in each .metal file
@@ -173,11 +221,24 @@ struct WorkingStateOverlay: View {
 
     // Raw shader layer: outputs auto-contrasted grayscale luminance.
     // No theme color, no posterize, no pixelate — those are in post-process.
-    private func rawShaderLayer(modeIndex: Int, elapsed: Double, size: CGSize) -> some View {
+    // When resolutionScale < 1, renders into a smaller frame and scales up
+    // to reduce fragment count (since pixelation discards the extra detail anyway).
+    private var renderScale: Double {
+        // Full resolution when pixelation is off — low-res only makes sense
+        // when pixel blocks mask the detail loss
+        if pixelSize < 1 { return 1.0 }
+        return max(min(resolutionScale, 1.0), 0.1)
+    }
+
+    private func rawShaderLayer(modeIndex: Int, elapsed: Double, size: CGSize, contrast: Double = 1.0, brightness: Double = 0.0) -> some View {
         let funcName = Self.shaderNames[modeIndex] ?? "combinedEffect"
         let fn = ShaderLibrary[dynamicMember: funcName]
+        let scale = renderScale
+        let renderW = size.width * scale
+        let renderH = size.height * scale
         return Rectangle()
             .fill(Color.white)
+            .frame(width: renderW, height: renderH)
             .colorEffect(
                 fn(
                     .float(Float(elapsed)),
@@ -185,61 +246,90 @@ struct WorkingStateOverlay: View {
                     .float(Float(themeRGB.r)),
                     .float(Float(themeRGB.g)),
                     .float(Float(themeRGB.b)),
-                    .float(Float(size.width)),
-                    .float(Float(size.height)),
-                    .float(Float(pixelSize)),
-                    .float(Float(gridOpacity)),
+                    .float(Float(renderW)),
+                    .float(Float(renderH)),
+                    .float(Float(pixelSize * scale)),
+                    .float(Float(activeGridOpacity)),
                     .float(Float(posterizeLevels)),
                     .float(Float(hueSpread)),
-                    .float(Float(complementMix))
+                    .float(Float(complementMix)),
+                    .float(Float(contrast)),
+                    .float(Float(brightness))
                 )
             )
+            .drawingGroup()
     }
 
-    // Full pipeline: raw grayscale → blur → posterize + pixelate + grid
-    private func processedShaderLayer(modeIndex: Int, elapsed: Double, size: CGSize) -> some View {
-        let blurR = pixelSize > 1 ? pixelSize * 0.4 : 0.0
+    // Safely get palette float at index, defaulting to 0
+    private func pf(_ index: Int) -> Float {
+        index < paletteFloats.count ? paletteFloats[index] : 0.0
+    }
+
+    // Full pipeline: raw grayscale -> blur -> scale up -> posterize + pixelate + grid
+    private func processedShaderLayer(modeIndex: Int, elapsed: Double, size: CGSize, contrast: Double = 1.0, brightness: Double = 0.0) -> some View {
+        let scale = renderScale
+        let scaledPixel = pixelSize * scale
+        let blurR = scaledPixel > 1 ? scaledPixel * 0.4 : 0.0
         let maxOff = CGSize(width: max(pixelSize, 1), height: max(pixelSize, 1))
-        return rawShaderLayer(modeIndex: modeIndex, elapsed: elapsed, size: size)
+        return rawShaderLayer(modeIndex: modeIndex, elapsed: elapsed, size: size, contrast: contrast, brightness: brightness)
             .blur(radius: blurR)
+            .drawingGroup()
+            .scaleEffect(1.0 / scale)
+            .frame(width: size.width, height: size.height)
             .drawingGroup()
             .layerEffect(
                 ShaderLibrary.posterizePixelateEffect(
                     .float(Float(pixelSize)),
-                    .float(Float(gridOpacity)),
+                    .float(Float(activeGridOpacity)),
                     .float(Float(posterizeLevels)),
-                    .float(Float(themeRGB.r)),
-                    .float(Float(themeRGB.g)),
-                    .float(Float(themeRGB.b)),
-                    .float(Float(hueSpread)),
-                    .float(Float(complementMix))
+                    .float(Float(paletteCount)),
+                    .float(pf(0)),  .float(pf(1)),  .float(pf(2)),
+                    .float(pf(3)),  .float(pf(4)),  .float(pf(5)),
+                    .float(pf(6)),  .float(pf(7)),  .float(pf(8)),
+                    .float(pf(9)),  .float(pf(10)), .float(pf(11)),
+                    .float(pf(12)), .float(pf(13)), .float(pf(14)),
+                    .float(pf(15)), .float(pf(16)), .float(pf(17)),
+                    .float(pf(18)), .float(pf(19)), .float(pf(20)),
+                    .float(pf(21)), .float(pf(22)), .float(pf(23))
                 ),
                 maxSampleOffset: maxOff
             )
     }
 
     // Blurred raw grayscale layer (before post-process), ready for compositing.
-    private func blurredRawLayer(modeIndex: Int, elapsed: Double, size: CGSize) -> some View {
-        let blurR = pixelSize > 1 ? pixelSize * 0.4 : 0.0
-        return rawShaderLayer(modeIndex: modeIndex, elapsed: elapsed, size: size)
+    // Renders at renderScale resolution — caller must scale up after post-process.
+    private func blurredRawLayer(modeIndex: Int, elapsed: Double, size: CGSize, contrast: Double = 1.0, brightness: Double = 0.0) -> some View {
+        let scale = renderScale
+        let scaledPixel = pixelSize * scale
+        let blurR = scaledPixel > 1 ? scaledPixel * 0.4 : 0.0
+        return rawShaderLayer(modeIndex: modeIndex, elapsed: elapsed, size: size, contrast: contrast, brightness: brightness)
             .blur(radius: blurR)
             .drawingGroup()
     }
 
-    // Apply post-process (theme + posterize + pixelate + grid) to any view.
-    private func postProcess<V: View>(_ view: V) -> some View {
+    // Apply post-process (palette map + posterize + pixelate + grid) to any view.
+    // Scales up from low-res render first, then applies post-process at full resolution.
+    private func postProcess<V: View>(_ view: V, size: CGSize) -> some View {
+        let scale = renderScale
         let maxOff = CGSize(width: max(pixelSize, 1), height: max(pixelSize, 1))
         return view
+            .scaleEffect(1.0 / scale)
+            .frame(width: size.width, height: size.height)
+            .drawingGroup()
             .layerEffect(
                 ShaderLibrary.posterizePixelateEffect(
                     .float(Float(pixelSize)),
-                    .float(Float(gridOpacity)),
+                    .float(Float(activeGridOpacity)),
                     .float(Float(posterizeLevels)),
-                    .float(Float(themeRGB.r)),
-                    .float(Float(themeRGB.g)),
-                    .float(Float(themeRGB.b)),
-                    .float(Float(hueSpread)),
-                    .float(Float(complementMix))
+                    .float(Float(paletteCount)),
+                    .float(pf(0)),  .float(pf(1)),  .float(pf(2)),
+                    .float(pf(3)),  .float(pf(4)),  .float(pf(5)),
+                    .float(pf(6)),  .float(pf(7)),  .float(pf(8)),
+                    .float(pf(9)),  .float(pf(10)), .float(pf(11)),
+                    .float(pf(12)), .float(pf(13)), .float(pf(14)),
+                    .float(pf(15)), .float(pf(16)), .float(pf(17)),
+                    .float(pf(18)), .float(pf(19)), .float(pf(20)),
+                    .float(pf(21)), .float(pf(22)), .float(pf(23))
                 ),
                 maxSampleOffset: maxOff
             )
@@ -248,12 +338,20 @@ struct WorkingStateOverlay: View {
     @ViewBuilder
     private var shaderView: some View {
         TimelineView(.animation) { timeline in
-            let elapsed = timeline.date.timeIntervalSince(startDate) * speed
+            let baseElapsed = timeline.date.timeIntervalSince(startDate) * speed
+            let currentTuning = shaderTunings[mode] ?? ShaderTuning()
+            let currentElapsed = baseElapsed * currentTuning.speedMultiplier
+            let currentContrast = currentTuning.contrast
+            let currentBrightness = currentTuning.brightness
             GeometryReader { geo in
                 let size = geo.size
 
                 if let prevMode = previousMode, let transStart = transitionStart {
                     // Transition in progress
+                    let prevTuning = shaderTunings[prevMode] ?? ShaderTuning()
+                    let prevElapsed = baseElapsed * prevTuning.speedMultiplier
+                    let prevContrast = prevTuning.contrast
+                    let prevBrightness = prevTuning.brightness
                     let transElapsed = timeline.date.timeIntervalSince(transStart)
                     let rawProgress = min(transElapsed / max(transitionDuration, 0.01), 1.0)
                     // Quintic smoothstep — gentler ease-in/out for cinematic dissolve
@@ -275,26 +373,26 @@ struct WorkingStateOverlay: View {
                     // Single post-process pass themes the blended result.
                     postProcess(
                         ZStack {
-                            blurredRawLayer(modeIndex: prevMode, elapsed: elapsed, size: size)
+                            blurredRawLayer(modeIndex: prevMode, elapsed: prevElapsed, size: size, contrast: prevContrast, brightness: prevBrightness)
                                 .colorEffect(
                                     ShaderLibrary.lumaDissolveOut(
                                         .float(Float(progress))
                                     )
                                 )
 
-                            blurredRawLayer(modeIndex: mode, elapsed: elapsed, size: size)
+                            blurredRawLayer(modeIndex: mode, elapsed: currentElapsed, size: size, contrast: currentContrast, brightness: currentBrightness)
                                 .colorEffect(
                                     ShaderLibrary.lumaRevealEffect(
                                         .float(Float(progress))
                                     )
                                 )
                         }
-                        .drawingGroup()
+                        .drawingGroup(),
+                        size: size
                     )
-                    .drawingGroup()
                 } else {
                     // No transition — single shader, full pipeline
-                    processedShaderLayer(modeIndex: mode, elapsed: elapsed, size: size)
+                    processedShaderLayer(modeIndex: mode, elapsed: currentElapsed, size: size, contrast: currentContrast, brightness: currentBrightness)
                         .drawingGroup()
                 }
             }
